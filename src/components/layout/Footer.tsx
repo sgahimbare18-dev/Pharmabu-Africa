@@ -116,6 +116,12 @@ export default function Footer() {
           <p className="text-gray-600">
             This platform is a regulated medical system. All actions are logged and legally binding.
           </p>
+          <a
+            href="/admin/login"
+            className="text-gray-700 hover:text-gray-500 transition-colors"
+          >
+            Admin
+          </a>
         </div>
       </div>
     </footer>
