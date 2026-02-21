@@ -7,14 +7,28 @@ import { useRouter } from "next/navigation";
 export default function RegisterPharmacyPage() {
   const router = useRouter();
   const [form, setForm] = useState({
+    // Basic info
     pharmacyName: "",
     pharmacistName: "",
     email: "",
     phone: "",
+    // Pharmacist credentials
     licenseNumber: "",
+    pharmacistQualification: "",
+    pharmacistUniversity: "",
+    pharmacistGraduationYear: "",
+    // Pharmacy registration
+    pharmacyRegNumber: "",
+    pharmacyRegAuthority: "",
+    pharmacyRegExpiry: "",
+    // Location
     country: "kenya" as "kenya" | "burundi",
     city: "",
     address: "",
+    // Operations
+    operatingHours: "",
+    servicesOffered: "",
+    // Auth
     password: "",
     confirmPassword: "",
   });
@@ -52,9 +66,17 @@ export default function RegisterPharmacyPage() {
           email: form.email,
           phone: form.phone,
           licenseNumber: form.licenseNumber,
+          pharmacistQualification: form.pharmacistQualification,
+          pharmacistUniversity: form.pharmacistUniversity,
+          pharmacistGraduationYear: form.pharmacistGraduationYear,
+          pharmacyRegNumber: form.pharmacyRegNumber,
+          pharmacyRegAuthority: form.pharmacyRegAuthority,
+          pharmacyRegExpiry: form.pharmacyRegExpiry,
           country: form.country,
           city: form.city,
           address: form.address,
+          operatingHours: form.operatingHours,
+          servicesOffered: form.servicesOffered,
           password: form.password,
         }),
       });
@@ -63,7 +85,7 @@ export default function RegisterPharmacyPage() {
         setError(data.error || "Registration failed.");
       } else {
         setSuccess(data.message);
-        setTimeout(() => router.push("/signin"), 4000);
+        setTimeout(() => router.push("/signin"), 5000);
       }
     } catch {
       setError("Network error. Please try again.");
@@ -72,9 +94,15 @@ export default function RegisterPharmacyPage() {
     }
   }
 
+  const inputClass =
+    "w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition";
+  const labelClass = "block text-emerald-200 text-sm font-medium mb-1.5";
+  const sectionHeadingClass =
+    "text-emerald-400 text-xs font-semibold uppercase tracking-widest mb-4 mt-2 flex items-center gap-2";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-2xl">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
@@ -99,98 +127,195 @@ export default function RegisterPharmacyPage() {
           <span className="text-amber-400 text-lg flex-shrink-0">⚠️</span>
           <p className="text-amber-200/80 text-sm leading-relaxed">
             Your pharmacy will be manually verified by our team before activation. Please ensure all
-            details match your official registration documents.
+            details match your official registration documents. Our admin will review your credentials
+            and registration certificates.
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Pharmacy Name */}
-            <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Pharmacy Name
-              </label>
-              <input
-                type="text"
-                name="pharmacyName"
-                value={form.pharmacyName}
-                onChange={handleChange}
-                placeholder="MedPlus Pharmacy"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
-              />
+
+            {/* ── Section 1: Basic Information ── */}
+            <div className={sectionHeadingClass}>
+              <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">1</span>
+              Basic Information
             </div>
 
-            {/* Pharmacist Name */}
-            <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Lead Pharmacist Full Name
-              </label>
-              <input
-                type="text"
-                name="pharmacistName"
-                value={form.pharmacistName}
-                onChange={handleChange}
-                placeholder="Dr. John Mwangi"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className={labelClass}>Pharmacy Name *</label>
+                <input
+                  type="text"
+                  name="pharmacyName"
+                  value={form.pharmacyName}
+                  onChange={handleChange}
+                  placeholder="MedPlus Pharmacy"
+                  required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Lead Pharmacist Full Name *</label>
+                <input
+                  type="text"
+                  name="pharmacistName"
+                  value={form.pharmacistName}
+                  onChange={handleChange}
+                  placeholder="Dr. John Mwangi"
+                  required
+                  className={inputClass}
+                />
+              </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="pharmacy@example.com"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className={labelClass}>Email Address *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="pharmacy@example.com"
+                  required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Phone Number *</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="+254 700 000 000"
+                  required
+                  className={inputClass}
+                />
+              </div>
             </div>
 
-            {/* Phone */}
-            <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="+254 700 000 000"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
-              />
+            {/* ── Section 2: Pharmacist Credentials ── */}
+            <div className={sectionHeadingClass}>
+              <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">2</span>
+              Pharmacist Professional Credentials
             </div>
 
-            {/* License Number */}
             <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Pharmacist License Number
-              </label>
+              <label className={labelClass}>Pharmacist License / Registration Number *</label>
               <input
                 type="text"
                 name="licenseNumber"
                 value={form.licenseNumber}
                 onChange={handleChange}
-                placeholder="PPB/2024/XXXXX"
+                placeholder="PPB/2024/XXXXX (Kenya) or ARCOS/XXXX (Burundi)"
                 required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
+                className={inputClass}
+              />
+              <p className="text-emerald-300/50 text-xs mt-1">
+                Your official license number issued by the Pharmacy & Poisons Board (Kenya) or ARCOS (Burundi).
+              </p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Highest Pharmacist Qualification *</label>
+              <input
+                type="text"
+                name="pharmacistQualification"
+                value={form.pharmacistQualification}
+                onChange={handleChange}
+                placeholder="e.g. Bachelor of Pharmacy (B.Pharm), Doctor of Pharmacy (Pharm.D)"
+                required
+                className={inputClass}
               />
             </div>
 
-            {/* Country */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className={labelClass}>University / Institution *</label>
+                <input
+                  type="text"
+                  name="pharmacistUniversity"
+                  value={form.pharmacistUniversity}
+                  onChange={handleChange}
+                  placeholder="University of Nairobi"
+                  required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Year of Graduation *</label>
+                <input
+                  type="text"
+                  name="pharmacistGraduationYear"
+                  value={form.pharmacistGraduationYear}
+                  onChange={handleChange}
+                  placeholder="e.g. 2018"
+                  required
+                  pattern="\d{4}"
+                  maxLength={4}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            {/* ── Section 3: Pharmacy Registration ── */}
+            <div className={sectionHeadingClass}>
+              <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">3</span>
+              Pharmacy Business Registration
+            </div>
+
             <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Country
-              </label>
+              <label className={labelClass}>Pharmacy Registration Number *</label>
+              <input
+                type="text"
+                name="pharmacyRegNumber"
+                value={form.pharmacyRegNumber}
+                onChange={handleChange}
+                placeholder="e.g. PPB/PHARM/2024/XXXXX"
+                required
+                className={inputClass}
+              />
+              <p className="text-emerald-300/50 text-xs mt-1">
+                The official registration number of your pharmacy premises as issued by the regulatory authority.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className={labelClass}>Issuing Regulatory Authority *</label>
+                <input
+                  type="text"
+                  name="pharmacyRegAuthority"
+                  value={form.pharmacyRegAuthority}
+                  onChange={handleChange}
+                  placeholder="Kenya Pharmacy & Poisons Board"
+                  required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Registration Expiry Date *</label>
+                <input
+                  type="date"
+                  name="pharmacyRegExpiry"
+                  value={form.pharmacyRegExpiry}
+                  onChange={handleChange}
+                  required
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            {/* ── Section 4: Location ── */}
+            <div className={sectionHeadingClass}>
+              <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">4</span>
+              Location
+            </div>
+
+            <div>
+              <label className={labelClass}>Country *</label>
               <select
                 name="country"
                 value={form.country}
@@ -203,69 +328,95 @@ export default function RegisterPharmacyPage() {
               </select>
             </div>
 
-            {/* City */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className={labelClass}>City *</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  placeholder="Nairobi"
+                  required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Physical Address *</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  placeholder="123 Kenyatta Avenue, Westlands"
+                  required
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            {/* ── Section 5: Operations ── */}
+            <div className={sectionHeadingClass}>
+              <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">5</span>
+              Operations (Optional)
+            </div>
+
             <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                City
-              </label>
+              <label className={labelClass}>Operating Hours</label>
               <input
                 type="text"
-                name="city"
-                value={form.city}
+                name="operatingHours"
+                value={form.operatingHours}
                 onChange={handleChange}
-                placeholder="Nairobi"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
+                placeholder="Mon–Fri 8am–8pm, Sat 9am–5pm, Sun Closed"
+                className={inputClass}
               />
             </div>
 
-            {/* Address */}
             <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Physical Address
-              </label>
+              <label className={labelClass}>Services Offered</label>
               <input
                 type="text"
-                name="address"
-                value={form.address}
+                name="servicesOffered"
+                value={form.servicesOffered}
                 onChange={handleChange}
-                placeholder="123 Kenyatta Avenue, Westlands"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
+                placeholder="Dispensing, Telepharmacy, Home Delivery, Prescription Counseling"
+                className={inputClass}
               />
             </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="Min. 8 characters"
-                required
-                minLength={8}
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
-              />
+            {/* ── Section 6: Account Security ── */}
+            <div className={sectionHeadingClass}>
+              <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">6</span>
+              Account Security
             </div>
 
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                placeholder="Repeat your password"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className={labelClass}>Password *</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Min. 8 characters"
+                  required
+                  minLength={8}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Confirm Password *</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Repeat your password"
+                  required
+                  className={inputClass}
+                />
+              </div>
             </div>
 
             {/* Error / Success */}

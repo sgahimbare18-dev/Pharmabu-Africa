@@ -78,10 +78,23 @@ export interface Pharmacy {
   pharmacistName: string;
   email: string;
   phone: string;
-  licenseNumber: string;
+  // Pharmacist professional credentials
+  licenseNumber: string;           // e.g. PPB/2024/XXXXX (Kenya Pharmacy & Poisons Board)
+  pharmacistQualification: string; // e.g. "Bachelor of Pharmacy (B.Pharm)"
+  pharmacistUniversity: string;    // e.g. "University of Nairobi"
+  pharmacistGraduationYear: string; // e.g. "2018"
+  // Pharmacy business registration
+  pharmacyRegNumber: string;       // Official pharmacy/business registration number
+  pharmacyRegAuthority: string;    // e.g. "Kenya Pharmacy & Poisons Board", "ARCOS Burundi"
+  pharmacyRegExpiry: string;       // Expiry date of pharmacy registration (YYYY-MM-DD)
+  // Location
   country: "kenya" | "burundi";
   city: string;
   address: string;
+  // Additional info
+  operatingHours: string;          // e.g. "Mon-Fri 8am-8pm, Sat 9am-5pm"
+  servicesOffered: string;         // e.g. "Dispensing, Telepharmacy, Delivery"
+  // Auth
   passwordHash: string;
   role: "pharmacy";
   status: "pending" | "verified" | "rejected";

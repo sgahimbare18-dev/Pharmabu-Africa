@@ -10,9 +10,17 @@ export async function POST(req: NextRequest) {
       email,
       phone,
       licenseNumber,
+      pharmacistQualification,
+      pharmacistUniversity,
+      pharmacistGraduationYear,
+      pharmacyRegNumber,
+      pharmacyRegAuthority,
+      pharmacyRegExpiry,
       country,
       city,
       address,
+      operatingHours,
+      servicesOffered,
       password,
     } = body as {
       pharmacyName: string;
@@ -20,25 +28,39 @@ export async function POST(req: NextRequest) {
       email: string;
       phone: string;
       licenseNumber: string;
+      pharmacistQualification: string;
+      pharmacistUniversity: string;
+      pharmacistGraduationYear: string;
+      pharmacyRegNumber: string;
+      pharmacyRegAuthority: string;
+      pharmacyRegExpiry: string;
       country: "kenya" | "burundi";
       city: string;
       address: string;
+      operatingHours: string;
+      servicesOffered: string;
       password: string;
     };
 
-    // Validation
+    // Required field validation
     if (
       !pharmacyName ||
       !pharmacistName ||
       !email ||
       !phone ||
       !licenseNumber ||
+      !pharmacistQualification ||
+      !pharmacistUniversity ||
+      !pharmacistGraduationYear ||
+      !pharmacyRegNumber ||
+      !pharmacyRegAuthority ||
+      !pharmacyRegExpiry ||
       !country ||
       !city ||
       !address ||
       !password
     ) {
-      return NextResponse.json({ error: "All fields are required." }, { status: 400 });
+      return NextResponse.json({ error: "All required fields must be filled in." }, { status: 400 });
     }
     if (password.length < 8) {
       return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
@@ -57,9 +79,17 @@ export async function POST(req: NextRequest) {
       email,
       phone,
       licenseNumber,
+      pharmacistQualification,
+      pharmacistUniversity,
+      pharmacistGraduationYear,
+      pharmacyRegNumber,
+      pharmacyRegAuthority,
+      pharmacyRegExpiry,
       country,
       city,
       address,
+      operatingHours: operatingHours || "",
+      servicesOffered: servicesOffered || "",
       passwordHash: hashPassword(password),
       role: "pharmacy",
     });

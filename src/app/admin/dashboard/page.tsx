@@ -10,10 +10,23 @@ interface PharmacyRow {
   pharmacistName: string;
   email: string;
   phone: string;
+  // Pharmacist credentials
   licenseNumber: string;
+  pharmacistQualification: string;
+  pharmacistUniversity: string;
+  pharmacistGraduationYear: string;
+  // Pharmacy registration
+  pharmacyRegNumber: string;
+  pharmacyRegAuthority: string;
+  pharmacyRegExpiry: string;
+  // Location
   country: string;
   city: string;
   address: string;
+  // Operations
+  operatingHours: string;
+  servicesOffered: string;
+  // Meta
   status: "pending" | "verified" | "rejected";
   createdAt: string;
 }
@@ -28,6 +41,7 @@ export default function AdminDashboardPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [adminName, setAdminName] = useState("Admin");
+  const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyRow | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("pharmalink_admin");
@@ -82,10 +96,13 @@ export default function AdminDashboardPage() {
       const data = (await res.json()) as { message?: string; error?: string };
       if (res.ok) {
         setMessage({ type: "success", text: data.message ?? "Status updated." });
-        // Update local state
         setPharmacies((prev) =>
           prev.map((p) => (p.id === id ? { ...p, status } : p))
         );
+        // Update selected pharmacy if it's the one being changed
+        if (selectedPharmacy?.id === id) {
+          setSelectedPharmacy((prev) => prev ? { ...prev, status } : null);
+        }
       } else {
         setMessage({ type: "error", text: data.error ?? "Failed to update status." });
       }
@@ -111,13 +128,14 @@ export default function AdminDashboardPage() {
 
   const statusBadge = (status: PharmacyRow["status"]) => {
     const styles = {
-      pending: "bg-yellow-100 text-yellow-800",
-      verified: "bg-emerald-100 text-emerald-800",
-      rejected: "bg-red-100 text-red-800",
+      pending: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+      verified: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+      rejected: "bg-red-100 text-red-800 border border-red-200",
     };
+    const icons = { pending: "⏳", verified: "✅", rejected: "❌" };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
+        {icons[status]} {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
@@ -157,7 +175,7 @@ export default function AdminDashboardPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Pharmacy Registrations</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Review and approve or reject pharmacy registration requests.
+            Review credentials and approve or reject pharmacy registration requests.
           </p>
         </div>
 
@@ -209,7 +227,6 @@ export default function AdminDashboardPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacist</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">License #</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Registered</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
@@ -218,16 +235,15 @@ export default function AdminDashboardPage() {
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((p) => (
                     <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900">{p.pharmacyName}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{p.pharmacyName}</div>
+                        <div className="text-xs text-gray-400">{p.email}</div>
+                      </td>
                       <td className="px-4 py-3 text-gray-600">{p.pharmacistName}</td>
                       <td className="px-4 py-3 text-gray-600 font-mono text-xs">{p.licenseNumber}</td>
                       <td className="px-4 py-3 text-gray-600">
                         {p.city},{" "}
                         <span className="capitalize">{p.country}</span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        <div>{p.email}</div>
-                        <div className="text-xs text-gray-400">{p.phone}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">
                         {new Date(p.createdAt).toLocaleDateString("en-GB", {
@@ -238,40 +254,50 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="px-4 py-3">{statusBadge(p.status)}</td>
                       <td className="px-4 py-3">
-                        {p.status === "pending" ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleStatusChange(p.id, "verified")}
-                              disabled={actionLoading === p.id}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-medium rounded-lg transition-colors"
-                            >
-                              {actionLoading === p.id ? "…" : "Approve"}
-                            </button>
+                        <div className="flex gap-2 flex-wrap">
+                          {/* View Details button */}
+                          <button
+                            onClick={() => setSelectedPharmacy(p)}
+                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors border border-blue-200"
+                          >
+                            View Details
+                          </button>
+                          {/* Status actions */}
+                          {p.status === "pending" ? (
+                            <>
+                              <button
+                                onClick={() => handleStatusChange(p.id, "verified")}
+                                disabled={actionLoading === p.id}
+                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-medium rounded-lg transition-colors"
+                              >
+                                {actionLoading === p.id ? "…" : "Approve"}
+                              </button>
+                              <button
+                                onClick={() => handleStatusChange(p.id, "rejected")}
+                                disabled={actionLoading === p.id}
+                                className="px-3 py-1 bg-red-100 hover:bg-red-200 disabled:bg-red-50 text-red-700 text-xs font-medium rounded-lg transition-colors"
+                              >
+                                {actionLoading === p.id ? "…" : "Reject"}
+                              </button>
+                            </>
+                          ) : p.status === "verified" ? (
                             <button
                               onClick={() => handleStatusChange(p.id, "rejected")}
                               disabled={actionLoading === p.id}
-                              className="px-3 py-1 bg-red-100 hover:bg-red-200 disabled:bg-red-50 text-red-700 text-xs font-medium rounded-lg transition-colors"
+                              className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-lg transition-colors"
                             >
-                              {actionLoading === p.id ? "…" : "Reject"}
+                              Revoke
                             </button>
-                          </div>
-                        ) : p.status === "verified" ? (
-                          <button
-                            onClick={() => handleStatusChange(p.id, "rejected")}
-                            disabled={actionLoading === p.id}
-                            className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-lg transition-colors"
-                          >
-                            Revoke
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStatusChange(p.id, "verified")}
-                            disabled={actionLoading === p.id}
-                            className="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-lg transition-colors"
-                          >
-                            Re-approve
-                          </button>
-                        )}
+                          ) : (
+                            <button
+                              onClick={() => handleStatusChange(p.id, "verified")}
+                              disabled={actionLoading === p.id}
+                              className="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-lg transition-colors"
+                            >
+                              Re-approve
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -287,6 +313,192 @@ export default function AdminDashboardPage() {
           </button>
         </div>
       </main>
+
+      {/* ── Details Modal ── */}
+      {selectedPharmacy && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedPharmacy(null); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8">
+            {/* Modal header */}
+            <div className="flex items-start justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{selectedPharmacy.pharmacyName}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  {statusBadge(selectedPharmacy.status)}
+                  <span className="text-xs text-gray-400">
+                    Submitted {new Date(selectedPharmacy.createdAt).toLocaleDateString("en-GB", {
+                      day: "2-digit", month: "long", year: "numeric",
+                    })}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPharmacy(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none ml-4"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="p-6 space-y-6 text-sm">
+
+              {/* Section: Contact */}
+              <section>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
+                  📋 Contact Information
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <DetailRow label="Email" value={selectedPharmacy.email} />
+                  <DetailRow label="Phone" value={selectedPharmacy.phone} />
+                  <DetailRow label="City" value={selectedPharmacy.city} />
+                  <DetailRow label="Country" value={selectedPharmacy.country.charAt(0).toUpperCase() + selectedPharmacy.country.slice(1)} />
+                  <div className="col-span-2">
+                    <DetailRow label="Physical Address" value={selectedPharmacy.address} />
+                  </div>
+                  {selectedPharmacy.operatingHours && (
+                    <div className="col-span-2">
+                      <DetailRow label="Operating Hours" value={selectedPharmacy.operatingHours} />
+                    </div>
+                  )}
+                  {selectedPharmacy.servicesOffered && (
+                    <div className="col-span-2">
+                      <DetailRow label="Services Offered" value={selectedPharmacy.servicesOffered} />
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Section: Pharmacist Credentials */}
+              <section>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
+                  🎓 Pharmacist Professional Credentials
+                </h3>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+                  <DetailRow label="Full Name" value={selectedPharmacy.pharmacistName} highlight />
+                  <DetailRow label="License / Registration Number" value={selectedPharmacy.licenseNumber} highlight mono />
+                  <DetailRow label="Qualification" value={selectedPharmacy.pharmacistQualification} highlight />
+                  <DetailRow label="University / Institution" value={selectedPharmacy.pharmacistUniversity} highlight />
+                  <DetailRow label="Year of Graduation" value={selectedPharmacy.pharmacistGraduationYear} highlight />
+                </div>
+              </section>
+
+              {/* Section: Pharmacy Registration */}
+              <section>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
+                  🏥 Pharmacy Business Registration
+                </h3>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-3">
+                  <DetailRow label="Pharmacy Registration Number" value={selectedPharmacy.pharmacyRegNumber} highlight mono />
+                  <DetailRow label="Issuing Authority" value={selectedPharmacy.pharmacyRegAuthority} highlight />
+                  <DetailRow
+                    label="Registration Expiry"
+                    value={selectedPharmacy.pharmacyRegExpiry
+                      ? new Date(selectedPharmacy.pharmacyRegExpiry).toLocaleDateString("en-GB", {
+                          day: "2-digit", month: "long", year: "numeric",
+                        })
+                      : "—"}
+                    highlight
+                    expired={selectedPharmacy.pharmacyRegExpiry
+                      ? new Date(selectedPharmacy.pharmacyRegExpiry) < new Date()
+                      : false}
+                  />
+                </div>
+              </section>
+            </div>
+
+            {/* Modal footer — action buttons */}
+            <div className="flex items-center justify-between gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setSelectedPharmacy(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Close
+              </button>
+              <div className="flex gap-3">
+                {selectedPharmacy.status === "pending" && (
+                  <>
+                    <button
+                      onClick={() => handleStatusChange(selectedPharmacy.id, "rejected")}
+                      disabled={actionLoading === selectedPharmacy.id}
+                      className="px-5 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-xl transition-colors"
+                    >
+                      {actionLoading === selectedPharmacy.id ? "…" : "❌ Reject"}
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange(selectedPharmacy.id, "verified")}
+                      disabled={actionLoading === selectedPharmacy.id}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors"
+                    >
+                      {actionLoading === selectedPharmacy.id ? "…" : "✅ Approve"}
+                    </button>
+                  </>
+                )}
+                {selectedPharmacy.status === "verified" && (
+                  <button
+                    onClick={() => handleStatusChange(selectedPharmacy.id, "rejected")}
+                    disabled={actionLoading === selectedPharmacy.id}
+                    className="px-5 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-xl transition-colors"
+                  >
+                    {actionLoading === selectedPharmacy.id ? "…" : "Revoke Approval"}
+                  </button>
+                )}
+                {selectedPharmacy.status === "rejected" && (
+                  <button
+                    onClick={() => handleStatusChange(selectedPharmacy.id, "verified")}
+                    disabled={actionLoading === selectedPharmacy.id}
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors"
+                  >
+                    {actionLoading === selectedPharmacy.id ? "…" : "Re-approve"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Helper component ──────────────────────────────────────────────────────────
+
+function DetailRow({
+  label,
+  value,
+  highlight = false,
+  mono = false,
+  expired = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+  mono?: boolean;
+  expired?: boolean;
+}) {
+  return (
+    <div className={highlight ? "" : "flex flex-col"}>
+      <span className="text-xs text-gray-500 font-medium">{label}</span>
+      <span
+        className={`mt-0.5 ${
+          mono ? "font-mono text-xs" : "text-sm"
+        } ${
+          expired
+            ? "text-red-600 font-semibold"
+            : highlight
+            ? "text-gray-900 font-medium"
+            : "text-gray-700"
+        }`}
+      >
+        {value || "—"}
+        {expired && (
+          <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-normal">
+            EXPIRED
+          </span>
+        )}
+      </span>
     </div>
   );
 }

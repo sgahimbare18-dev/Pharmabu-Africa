@@ -41,6 +41,22 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
   - Pharmacy status update API (`POST /api/admin/pharmacies/[id]/status`) — approve, reject, revoke
   - `updatePharmacyStatus` and `getPharmacyById` helpers added to `src/lib/store.ts`
   - Admin credentials: `admin@pharmalink.africa` / `PharmaAdmin2024!`
+- [x] Enhanced pharmacy registration with full credential collection (MVP Phase 1 - Step 3)
+  - Pharmacy registration form expanded to 6 sections with new fields:
+    - Pharmacist license/registration number (PPB/ARCOS)
+    - Pharmacist qualification (B.Pharm, Pharm.D, etc.)
+    - University/institution and graduation year
+    - Pharmacy business registration number
+    - Issuing regulatory authority (PPB Kenya / ARCOS Burundi)
+    - Registration expiry date (with expired warning in admin)
+    - Operating hours and services offered
+  - `Pharmacy` interface in `src/lib/store.ts` updated with all new fields
+  - `register-pharmacy` API route updated to accept and store all new fields
+  - Admin dashboard updated with "View Details" modal showing full credential paper trail:
+    - Contact information section
+    - Pharmacist Professional Credentials section (blue card)
+    - Pharmacy Business Registration section (green card) with expiry warning
+    - Approve/Reject/Revoke actions available directly from modal
 
 ## Current Structure
 
