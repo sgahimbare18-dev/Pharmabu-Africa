@@ -38,12 +38,18 @@ export default function Navbar() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <button className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors px-3 py-2">
+            <Link
+              href="/signin"
+              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors px-3 py-2"
+            >
               Sign In
-            </button>
-            <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            </Link>
+            <Link
+              href="/register"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
               Get Started
-            </button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -81,10 +87,20 @@ export default function Navbar() {
                 For Pharmacies
               </a>
               <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
-                <button className="text-sm font-medium text-gray-700 py-2 text-left">Sign In</button>
-                <button className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg">
+                <Link
+                  href="/signin"
+                  className="text-sm font-medium text-gray-700 py-2"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg text-center"
+                  onClick={() => setMenuOpen(false)}
+                >
                   Get Started
-                </button>
+                </Link>
               </div>
             </div>
           </div>

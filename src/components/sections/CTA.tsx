@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function CTA() {
   return (
     <section className="py-24 bg-white">
@@ -17,12 +19,18 @@ export default function CTA() {
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center">
-              <button className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg">
+              <Link
+                href="/register"
+                className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg"
+              >
                 Find a Pharmacy Near You
-              </button>
-              <button className="border-2 border-white/40 hover:border-white text-white font-semibold px-8 py-3.5 rounded-xl transition-all hover:bg-white/10">
+              </Link>
+              <Link
+                href="/register/pharmacy"
+                className="border-2 border-white/40 hover:border-white text-white font-semibold px-8 py-3.5 rounded-xl transition-all hover:bg-white/10"
+              >
                 Register Your Pharmacy
-              </button>
+              </Link>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-emerald-200/70 text-sm">

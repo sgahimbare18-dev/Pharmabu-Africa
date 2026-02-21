@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Project Status**: ✅ Landing page built and deployed
+**Project Status**: ✅ Landing page + Auth/Registration backend complete
 
-PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete and live.
+PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete and all CTA buttons are now wired to functional registration and sign-in flows.
 
 ## Recently Completed
 
@@ -24,6 +24,15 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
   - ForPharmacies section with Family Pharmacist module
   - CTA section
   - Footer with regulatory info
+- [x] Auth & Registration backend (MVP Phase 1 - Step 1)
+  - Patient registration page + API (`/register`, `/api/auth/register`)
+  - Pharmacy registration page + API (`/register/pharmacy`, `/api/auth/register-pharmacy`)
+  - Sign-in page + API (`/signin`, `/api/auth/signin`)
+  - File-based JSON data store (`src/lib/store.ts`) with SHA-256 password hashing
+  - Patient dashboard (`/dashboard/patient`)
+  - Pharmacy dashboard (`/dashboard/pharmacy`)
+  - All landing page CTA buttons wired to correct pages
+  - `.data/` directory gitignored
 
 ## Current Structure
 

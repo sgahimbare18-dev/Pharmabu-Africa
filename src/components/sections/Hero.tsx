@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Hero() {
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 flex items-center overflow-hidden">
@@ -60,12 +62,18 @@ export default function Hero() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <button className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50 hover:shadow-emerald-500/30 hover:-translate-y-0.5">
+              <Link
+                href="/register"
+                className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50 hover:shadow-emerald-500/30 hover:-translate-y-0.5"
+              >
                 Find a Pharmacy
-              </button>
-              <button className="border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-semibold px-8 py-3.5 rounded-xl transition-all hover:bg-emerald-800/30">
+              </Link>
+              <Link
+                href="/register/pharmacy"
+                className="border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-semibold px-8 py-3.5 rounded-xl transition-all hover:bg-emerald-800/30"
+              >
                 Register Your Pharmacy
-              </button>
+              </Link>
             </div>
 
             {/* Trust indicators */}

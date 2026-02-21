@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const benefits = [
   {
     icon: "📈",
@@ -72,9 +74,12 @@ export default function ForPharmacies() {
               </div>
             </div>
 
-            <button className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50">
+            <Link
+              href="/register/pharmacy"
+              className="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50"
+            >
               Register Your Pharmacy →
-            </button>
+            </Link>
           </div>
 
           {/* Right: Benefits grid */}
