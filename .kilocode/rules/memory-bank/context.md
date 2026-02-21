@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Project Status**: ✅ Landing page + Auth/Registration backend complete
+**Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel complete
 
-PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete and all CTA buttons are now wired to functional registration and sign-in flows.
+PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, and an admin panel exists for pharmacy approval.
 
 ## Recently Completed
 
@@ -33,6 +33,14 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
   - Pharmacy dashboard (`/dashboard/pharmacy`)
   - All landing page CTA buttons wired to correct pages
   - `.data/` directory gitignored
+- [x] Admin panel (MVP Phase 1 - Step 2)
+  - Admin login page (`/admin/login`) with hardcoded credentials
+  - Admin dashboard (`/admin/dashboard`) with pharmacy list, filter by status, approve/reject/revoke actions
+  - Admin sign-in API (`/api/admin/signin`)
+  - Pharmacy list API (`GET /api/admin/pharmacies`) — protected by `x-admin-session` header
+  - Pharmacy status update API (`POST /api/admin/pharmacies/[id]/status`) — approve, reject, revoke
+  - `updatePharmacyStatus` and `getPharmacyById` helpers added to `src/lib/store.ts`
+  - Admin credentials: `admin@pharmalink.africa` / `PharmaAdmin2024!`
 
 ## Current Structure
 
@@ -51,19 +59,32 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
 | `src/components/sections/ForPharmacies.tsx` | Pharmacy benefits + Family Pharmacist | ✅ Ready |
 | `src/components/sections/CTA.tsx` | Call to action | ✅ Ready |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
+| `src/lib/store.ts` | File-based JSON data store | ✅ Ready |
+| `src/app/register/page.tsx` | Patient registration form | ✅ Ready |
+| `src/app/register/pharmacy/page.tsx` | Pharmacy registration form | ✅ Ready |
+| `src/app/signin/page.tsx` | Sign-in page (patients + pharmacies) | ✅ Ready |
+| `src/app/dashboard/patient/page.tsx` | Patient dashboard | ✅ Ready |
+| `src/app/dashboard/pharmacy/page.tsx` | Pharmacy dashboard | ✅ Ready |
+| `src/app/admin/login/page.tsx` | Admin login page | ✅ Ready |
+| `src/app/admin/dashboard/page.tsx` | Admin dashboard (pharmacy approvals) | ✅ Ready |
+| `src/app/api/auth/register/route.ts` | Patient registration API | ✅ Ready |
+| `src/app/api/auth/register-pharmacy/route.ts` | Pharmacy registration API | ✅ Ready |
+| `src/app/api/auth/signin/route.ts` | Sign-in API | ✅ Ready |
+| `src/app/api/admin/signin/route.ts` | Admin sign-in API | ✅ Ready |
+| `src/app/api/admin/pharmacies/route.ts` | List pharmacies API (admin) | ✅ Ready |
+| `src/app/api/admin/pharmacies/[id]/status/route.ts` | Update pharmacy status API (admin) | ✅ Ready |
 
 ## Current Focus
 
-Landing page is complete. Next steps for MVP Phase 1:
+Auth, registration, and admin panel are complete. Next steps for MVP Phase 1:
 
-1. Backend: Django + DRF + PostgreSQL setup
-2. User registration and authentication
-3. Pharmacist verification workflow
-4. Prescription upload and management
-5. Chat system (WebSockets)
-6. Order approval and counseling records
-7. Delivery tracking
-8. Payment integration (M-Pesa, Mobile Money)
+1. Prescription upload and management
+2. Chat system (WebSockets/polling)
+3. Order approval and counseling records
+4. Delivery tracking
+5. Payment integration (M-Pesa, Mobile Money)
+6. Replace file-based store with PostgreSQL/SQLite (Drizzle or Prisma)
+7. Replace localStorage session with JWT cookies or NextAuth
 
 ## Quick Start Guide
 

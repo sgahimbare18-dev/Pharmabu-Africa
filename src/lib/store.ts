@@ -108,3 +108,28 @@ export function createPharmacy(data: Omit<Pharmacy, "id" | "createdAt" | "status
   writeJSON(PHARMACIES_FILE, pharmacies);
   return pharmacy;
 }
+
+export function getPharmacyById(id: string): Pharmacy | undefined {
+  return getPharmacies().find((p) => p.id === id);
+}
+
+export function updatePharmacyStatus(
+  id: string,
+  status: "verified" | "rejected"
+): Pharmacy | null {
+  const pharmacies = getPharmacies();
+  const idx = pharmacies.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  pharmacies[idx].status = status;
+  writeJSON(PHARMACIES_FILE, pharmacies);
+  return pharmacies[idx];
+}
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+/**
+ * Hardcoded admin credentials.
+ * In production, store these in environment variables and use a proper secrets manager.
+ */
+export const ADMIN_EMAIL = "admin@pharmalink.africa";
+export const ADMIN_PASSWORD_HASH = hashPassword("PharmaAdmin2024!");
