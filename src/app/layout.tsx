@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Template",
-  description: "A minimal Next.js starter template",
+  title: "PharmaLink Africa — Digital Pharmacy Marketplace",
+  description:
+    "A secure, legally compliant digital pharmacy marketplace and telepharmacy platform for Africa. Verified pharmacies, prescription management, and delivery.",
 };
 
 export default function RootLayout({
