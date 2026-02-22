@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel + E-commerce/Marketplace complete
+**Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel + E-commerce/Marketplace + Database complete
 
-PharmabuLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, an admin panel exists for pharmacy approval, pharmacists can upload credential documents, and now includes a full e-commerce marketplace where patients can browse medications, chat with pharmacists about symptoms, and order for pay-on-delivery.
+PharmabuLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, an admin panel exists for pharmacy approval, pharmacists can upload credential documents, and now includes a full e-commerce marketplace where patients can browse medications, chat with pharmacists about symptoms, and order for pay-on-delivery. **Database support added for production deployment.**
 
 ## Recently Completed
 
@@ -143,6 +143,15 @@ PharmabuLink Africa is a secure, legally compliant Digital Pharmacy Marketplace 
     - Platform fees collected
   - Admin can send payout to pharmacy (92% of payment after 8% fee)
   - Payout status tracking: pending → sent/failed
+- [x] Database Integration (MVP Phase 1 - Step 12)
+  - Added Drizzle ORM with SQLite for persistent data storage
+  - Created 14 database tables: users, pharmacies, medications, orders, subscriptions, payments, messages, patient_profiles, pharmacy_staff, prescriptions, patient_records, family_pharmacists, family_doctor_services, profile_update_requests
+  - Database client at `src/db/index.ts`
+  - Migration script at `src/db/migrate.ts`
+  - Schema at `src/db/schema.ts`
+  - drizzle.config.ts for migration management
+  - Package scripts: db:generate, db:migrate
+  - Replaces file-based JSON storage with persistent database
 
 ## Current Structure
 
