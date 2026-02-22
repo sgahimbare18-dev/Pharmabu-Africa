@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -15,13 +15,31 @@ interface UserSession {
   adminName?: string;
 }
 
-interface Medication {
+interface PatientProfile {
   id: string;
-  pharmacyId: string;
-  name: string;
-  whatItCures: string;
-  price: number;
-  category: string;
+  userId: string;
+  dateOfBirth: string;
+  age: number;
+  gender: string;
+  address: string;
+  city: string;
+  country: string;
+  occupation: string;
+  educationLevel: string;
+  profilePicture: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  medicalNotes: string;
+  allergies: string;
+}
+
+interface Pharmacy {
+  id: string;
+  pharmacyName: string;
+  city: string;
+  status: string;
+  address: string;
+  phone: string;
 }
 
 interface Order {
@@ -42,6 +60,7 @@ interface Order {
   paymentMethod: string;
   deliveryAddress: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface Subscription {
@@ -57,11 +76,34 @@ interface Subscription {
   createdAt: string;
 }
 
-interface Pharmacy {
+interface Prescription {
   id: string;
+  patientId: string;
+  patientName: string;
+  pharmacyId: string;
   pharmacyName: string;
-  city: string;
+  medicationName: string;
+  dosage: string;
+  quantity: number;
+  instructions: string;
+  prescriberName: string;
+  prescriberLicense: string;
+  documentUrl: string;
   status: string;
+  notes: string;
+  createdAt: string;
+}
+
+interface FamilyPharmacist {
+  id: string;
+  patientId: string;
+  patientName: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacistName: string;
+  status: string;
+  assignedAt: string;
+  notes: string;
 }
 
 function getStoredUser(): UserSession | null {
@@ -75,54 +117,29 @@ function getStoredUser(): UserSession | null {
   }
 }
 
-async function fetchOrders(patientId: string): Promise<Order[]> {
-  try {
-    const res = await fetch(`/api/orders?patientId=${patientId}`);
-    if (res.ok) {
-      return await res.json();
-    }
-    return [];
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return [];
-  }
-}
-
-async function fetchSubscriptions(patientId: string): Promise<Subscription[]> {
-  try {
-    const res = await fetch(`/api/subscriptions?patientId=${patientId}`);
-    if (res.ok) {
-      return await res.json();
-    }
-    return [];
-  } catch (error) {
-    console.error("Error fetching subscriptions:", error);
-    return [];
-  }
-}
-
-async function fetchPharmacies(): Promise<Pharmacy[]> {
-  try {
-    const res = await fetch("/api/admin/pharmacies");
-    if (res.ok) {
-      return await res.json();
-    }
-    return [];
-  } catch (error) {
-    console.error("Error fetching pharmacies:", error);
-    return [];
-  }
-}
-
 export default function PatientDashboard() {
   const router = useRouter();
   const [user] = useState<UserSession | null>(getStoredUser);
+  const [activeTab, setActiveTab] = useState<"home" | "find-pharmacy" | "prescriptions" | "delivery" | "family-pharmacist" | "telepharmacy" | "profile">("home");
+  
+  // Data states
+  const [profile, setProfile] = useState<PatientProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [familyPharmacist, setFamilyPharmacist] = useState<FamilyPharmacist | null>(null);
+  
+  // Modals
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showFindPharmacyModal, setShowFindPharmacyModal] = useState(false);
+  const [showTelepharmacyModal, setShowTelepharmacyModal] = useState(false);
+  
+  // Form states
+  const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [orderForm, setOrderForm] = useState({
     quantity: "1",
     symptoms: "",
@@ -133,6 +150,62 @@ export default function PatientDashboard() {
     monthlyAmount: "",
     deliveryAddress: "",
   });
+  const [prescriptionForm, setPrescriptionForm] = useState({
+    medicationName: "",
+    dosage: "",
+    quantity: "",
+    instructions: "",
+    prescriberName: "",
+    prescriberLicense: "",
+  });
+  const [profileForm, setProfileForm] = useState({
+    dateOfBirth: "",
+    age: "",
+    gender: "other",
+    address: "",
+    city: "",
+    occupation: "",
+    educationLevel: "",
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    medicalNotes: "",
+    allergies: "",
+  });
+  const [telepharmacyForm, setTelepharmacyForm] = useState({
+    pharmacyId: "",
+    reason: "",
+  });
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingPrescription, setUploadingPrescription] = useState(false);
+
+  // Fetch user profile
+  useEffect(() => {
+    if (user) {
+      fetch(`/api/patient-profile?userId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error && data.id) {
+            setProfile(data);
+            setProfileForm({
+              dateOfBirth: data.dateOfBirth || "",
+              age: data.age?.toString() || "",
+              gender: data.gender || "other",
+              address: data.address || "",
+              city: data.city || "",
+              occupation: data.occupation || "",
+              educationLevel: data.educationLevel || "",
+              emergencyContactName: data.emergencyContactName || "",
+              emergencyContactPhone: data.emergencyContactPhone || "",
+              medicalNotes: data.medicalNotes || "",
+              allergies: data.allergies || "",
+            });
+          }
+        })
+        .catch(console.error);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -142,22 +215,20 @@ export default function PatientDashboard() {
     }
   }, [user, router]);
 
-  // Handle stored medication from marketplace
   useEffect(() => {
     if (user) {
-      fetchOrders(user.id).then(setOrders);
-      fetchSubscriptions(user.id).then(setSubscriptions);
-      fetchPharmacies().then(setPharmacies);
+      fetchOrders();
+      fetchSubscriptions();
+      fetchPharmacies();
+      fetchPrescriptions();
+      fetchFamilyPharmacist();
       
       // Check if user came from medication marketplace
       const storedMed = localStorage.getItem("selected_medication");
       if (storedMed) {
         try {
-          const med = JSON.parse(storedMed) as Medication;
-          // Use requestAnimationFrame to defer the state update
+          const med = JSON.parse(storedMed);
           requestAnimationFrame(() => {
-            setSelectedMedication(med);
-            setShowOrderModal(true);
             localStorage.removeItem("selected_medication");
           });
         } catch (e) {
@@ -167,9 +238,60 @@ export default function PatientDashboard() {
     }
   }, [user]);
 
+  async function fetchOrders() {
+    try {
+      const res = await fetch(`/api/orders?patientId=${user?.id}`);
+      if (res.ok) setOrders(await res.json());
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    }
+  }
+
+  async function fetchSubscriptions() {
+    try {
+      const res = await fetch(`/api/subscriptions?patientId=${user?.id}`);
+      if (res.ok) setSubscriptions(await res.json());
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
+    }
+  }
+
+  async function fetchPharmacies() {
+    try {
+      const res = await fetch("/api/admin/pharmacies");
+      if (res.ok) {
+        const data = await res.json();
+        setPharmacies(data.filter((p: Pharmacy) => p.status === "verified"));
+      }
+    } catch (error) {
+      console.error("Error fetching pharmacies:", error);
+    }
+  }
+
+  async function fetchPrescriptions() {
+    try {
+      const res = await fetch(`/api/prescriptions?patientId=${user?.id}`);
+      if (res.ok) setPrescriptions(await res.json());
+    } catch (error) {
+      console.error("Error fetching prescriptions:", error);
+    }
+  }
+
+  async function fetchFamilyPharmacist() {
+    try {
+      const res = await fetch(`/api/family-pharmacist?patientId=${user?.id}&active=true`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data) setFamilyPharmacist(data);
+      }
+    } catch (error) {
+      console.error("Error fetching family pharmacist:", error);
+    }
+  }
+
   async function handleSubmitOrder(e: React.FormEvent) {
     e.preventDefault();
-    if (!user || !selectedMedication) return;
+    if (!user || !selectedPharmacy) return;
 
     try {
       const res = await fetch("/api/orders", {
@@ -179,12 +301,12 @@ export default function PatientDashboard() {
           patientId: user.id,
           patientName: user.name,
           patientPhone: user.phone,
-          pharmacyId: selectedMedication.pharmacyId,
-          pharmacyName: "Pharmacy",
-          medicationId: selectedMedication.id,
-          medicationName: selectedMedication.name,
-          medicationPrice: selectedMedication.price,
-          quantity: Number(orderForm.quantity),
+          pharmacyId: selectedPharmacy.id,
+          pharmacyName: selectedPharmacy.pharmacyName,
+          medicationId: "",
+          medicationName: "Consultation",
+          medicationPrice: 0,
+          quantity: 1,
           symptoms: orderForm.symptoms,
           deliveryAddress: orderForm.deliveryAddress,
         }),
@@ -192,9 +314,9 @@ export default function PatientDashboard() {
 
       if (res.ok) {
         setShowOrderModal(false);
-        setSelectedMedication(null);
+        setSelectedPharmacy(null);
         setOrderForm({ quantity: "1", symptoms: "", deliveryAddress: "" });
-        fetchOrders(user.id).then(setOrders);
+        fetchOrders();
       }
     } catch (error) {
       console.error("Error creating order:", error);
@@ -205,7 +327,7 @@ export default function PatientDashboard() {
     e.preventDefault();
     if (!user || !subscriptionForm.pharmacyId) return;
 
-    const selectedPharmacy = pharmacies.find(p => p.id === subscriptionForm.pharmacyId);
+    const selected = pharmacies.find(p => p.id === subscriptionForm.pharmacyId);
     
     try {
       const res = await fetch("/api/subscriptions", {
@@ -216,8 +338,8 @@ export default function PatientDashboard() {
           patientName: user.name,
           patientPhone: user.phone,
           pharmacyId: subscriptionForm.pharmacyId,
-          pharmacyName: selectedPharmacy?.pharmacyName || "",
-          pharmacyCity: selectedPharmacy?.city || "",
+          pharmacyName: selected?.pharmacyName || "",
+          pharmacyCity: selected?.city || "",
           monthlyAmount: Number(subscriptionForm.monthlyAmount),
           deliveryAddress: subscriptionForm.deliveryAddress,
         }),
@@ -226,10 +348,166 @@ export default function PatientDashboard() {
       if (res.ok) {
         setShowSubscriptionModal(false);
         setSubscriptionForm({ pharmacyId: "", monthlyAmount: "", deliveryAddress: "" });
-        fetchSubscriptions(user.id).then(setSubscriptions);
+        fetchSubscriptions();
       }
     } catch (error) {
       console.error("Error creating subscription:", error);
+    }
+  }
+
+  async function handleUploadPrescription(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+
+    setUploadingPrescription(true);
+    try {
+      let documentUrl = "";
+      
+      // Upload file first if selected
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          documentUrl = uploadData.url || "";
+        }
+      }
+
+      // Determine which pharmacy to send to
+      let pharmacyId = prescriptionForm.medicationName; // Using this as pharmacy selection for now
+      let pharmacyName = "";
+      
+      if (familyPharmacist) {
+        pharmacyId = familyPharmacist.pharmacyId;
+        pharmacyName = familyPharmacist.pharmacyName;
+      } else if (selectedPharmacy) {
+        pharmacyId = selectedPharmacy.id;
+        pharmacyName = selectedPharmacy.pharmacyName;
+      }
+
+      const res = await fetch("/api/prescriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: user.id,
+          patientName: user.name,
+          pharmacyId,
+          pharmacyName,
+          medicationName: prescriptionForm.medicationName,
+          dosage: prescriptionForm.dosage,
+          quantity: Number(prescriptionForm.quantity),
+          instructions: prescriptionForm.instructions,
+          prescriberName: prescriptionForm.prescriberName,
+          prescriberLicense: prescriptionForm.prescriberLicense,
+          documentUrl,
+        }),
+      });
+
+      if (res.ok) {
+        setShowPrescriptionModal(false);
+        setPrescriptionForm({
+          medicationName: "",
+          dosage: "",
+          quantity: "",
+          instructions: "",
+          prescriberName: "",
+          prescriberLicense: "",
+        });
+        setSelectedFile(null);
+        fetchPrescriptions();
+        alert("Prescription uploaded successfully! The pharmacy will review it.");
+      }
+    } catch (error) {
+      console.error("Error uploading prescription:", error);
+    } finally {
+      setUploadingPrescription(false);
+    }
+  }
+
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      let res;
+      
+      if (profile?.id) {
+        // Update existing profile
+        res = await fetch("/api/patient-profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: profile.id,
+            userId: user.id,
+            ...profileForm,
+            age: Number(profileForm.age),
+            country: user.country,
+          }),
+        });
+      } else {
+        // Create new profile
+        res = await fetch("/api/patient-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            ...profileForm,
+            age: Number(profileForm.age),
+            country: user.country,
+          }),
+        });
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+        setShowProfileModal(false);
+        alert("Profile saved successfully!");
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+    }
+  }
+
+  async function handleStartTelepharmacy(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !telepharmacyForm.pharmacyId) return;
+
+    try {
+      const selected = pharmacies.find(p => p.id === telepharmacyForm.pharmacyId);
+      
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: user.id,
+          patientName: user.name,
+          patientPhone: user.phone,
+          pharmacyId: telepharmacyForm.pharmacyId,
+          pharmacyName: selected?.pharmacyName || "",
+          medicationId: "",
+          medicationName: "Telepharmacy Consultation",
+          medicationPrice: 0,
+          quantity: 1,
+          symptoms: telepharmacyForm.reason,
+          deliveryAddress: "Telepharmacy - No delivery needed",
+        }),
+      });
+
+      if (res.ok) {
+        setShowTelepharmacyModal(false);
+        setTelepharmacyForm({ pharmacyId: "", reason: "" });
+        alert("Telepharmacy consultation request sent! A pharmacist will contact you shortly.");
+        fetchOrders();
+      }
+    } catch (error) {
+      console.error("Error starting telepharmacy:", error);
     }
   }
 
@@ -247,7 +525,7 @@ export default function PatientDashboard() {
       });
 
       if (res.ok) {
-        fetchSubscriptions(user.id).then(setSubscriptions);
+        fetchSubscriptions();
       }
     } catch (error) {
       console.error("Error cancelling subscription:", error);
@@ -256,7 +534,6 @@ export default function PatientDashboard() {
 
   function handleSignOut() {
     if (user?.adminView) {
-      // If admin viewing as patient, return to admin dashboard
       localStorage.removeItem("pharmalink_user");
       router.push("/admin/dashboard");
     } else {
@@ -290,15 +567,15 @@ export default function PatientDashboard() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link
-              href="/medications"
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+            <button
+              onClick={() => setActiveTab("profile")}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-emerald-600"
             >
-              Browse Medications
-            </Link>
-            <span className="text-gray-600 text-sm hidden sm:block">
-              Welcome, <strong>{user.name}</strong>
-            </span>
+              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                <span className="text-emerald-600 font-medium">👤</span>
+              </div>
+              <span className="hidden sm:inline">{user.name}</span>
+            </button>
             <button
               onClick={handleSignOut}
               className="text-sm text-gray-500 hover:text-red-600 transition-colors"
@@ -324,298 +601,627 @@ export default function PatientDashboard() {
         </div>
       )}
 
-      {/* Main */}
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome banner */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white mb-8">
-          <h1 className="text-2xl font-bold mb-1">Hello, {user.name}! 👋</h1>
-          <p className="text-emerald-100/80">
-            Browse medications, chat with pharmacists, and order medicines for delivery.
-          </p>
-          <Link
-            href="/medications"
-            className="inline-block mt-4 bg-white text-emerald-700 px-4 py-2 rounded-lg font-medium hover:bg-emerald-50"
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab("home")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "home" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
           >
-            💊 Browse Medications
-          </Link>
+            🏠 Home
+          </button>
+          <button
+            onClick={() => setActiveTab("find-pharmacy")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "find-pharmacy" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            🔍 Find Pharmacy
+          </button>
+          <button
+            onClick={() => setActiveTab("prescriptions")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "prescriptions" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            📄 Prescriptions ({prescriptions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("delivery")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "delivery" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            🚚 Track Delivery ({activeOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("family-pharmacist")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "family-pharmacist" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            👨‍⚕️ Family Pharmacist
+          </button>
+          <button
+            onClick={() => setActiveTab("telepharmacy")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "telepharmacy" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            📹 Telepharmacy
+          </button>
         </div>
 
-        {/* Active Orders */}
-        {activeOrders.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Orders</h2>
-            <div className="space-y-4">
-              {activeOrders.map((order) => (
-                <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{order.medicationName}</h3>
-                      <p className="text-sm text-gray-500">Pharmacy: {order.pharmacyName}</p>
-                      <p className="text-sm text-gray-500">
-                        Qty: {order.quantity} · KES {order.totalPrice.toLocaleString()} · Pay on Delivery
-                      </p>
+        {/* HOME TAB */}
+        {activeTab === "home" && (
+          <div>
+            {/* Welcome banner */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white mb-8">
+              <h1 className="text-2xl font-bold mb-1">Hello, {user.name}! 👋</h1>
+              <p className="text-emerald-100/80">
+                Your health is our priority. Find a pharmacy, upload prescriptions, or consult with a pharmacist.
+              </p>
+            </div>
+
+            {/* Quick Actions Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <button
+                onClick={() => setActiveTab("find-pharmacy")}
+                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow text-left"
+              >
+                <div className="text-3xl mb-3">🏥</div>
+                <h3 className="font-semibold text-gray-900">Find a Pharmacy</h3>
+                <p className="text-gray-500 text-sm mt-1">Browse verified pharmacies near you</p>
+              </button>
+
+              <button
+                onClick={() => setShowPrescriptionModal(true)}
+                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow text-left"
+              >
+                <div className="text-3xl mb-3">📤</div>
+                <h3 className="font-semibold text-gray-900">Upload Prescription</h3>
+                <p className="text-gray-500 text-sm mt-1">Upload your prescription for review</p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("delivery")}
+                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow text-left"
+              >
+                <div className="text-3xl mb-3">🚚</div>
+                <h3 className="font-semibold text-gray-900">Track Delivery</h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  {activeOrders.length > 0 ? `${activeOrders.length} active delivery` : "No active deliveries"}
+                </p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("family-pharmacist")}
+                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow text-left"
+              >
+                <div className="text-3xl mb-3">👨‍⚕️</div>
+                <h3 className="font-semibold text-gray-900">Family Pharmacist</h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  {familyPharmacist ? `Assigned to ${familyPharmacist.pharmacyName}` : "Assign your regular pharmacist"}
+                </p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("telepharmacy")}
+                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow text-left"
+              >
+                <div className="text-3xl mb-3">📹</div>
+                <h3 className="font-semibold text-gray-900">Telepharmacy</h3>
+                <p className="text-gray-500 text-sm mt-1">Consult with a pharmacist via video call</p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("prescriptions")}
+                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow text-left"
+              >
+                <div className="text-3xl mb-3">📋</div>
+                <h3 className="font-semibold text-gray-900">My Prescriptions</h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  {prescriptions.length > 0 ? `${prescriptions.length} prescription${prescriptions.length !== 1 ? "s" : ""}` : "No prescriptions yet"}
+                </p>
+              </button>
+            </div>
+
+            {/* Active Orders */}
+            {activeOrders.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Orders</h2>
+                <div className="space-y-4">
+                  {activeOrders.map((order) => (
+                    <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{order.medicationName}</h3>
+                          <p className="text-sm text-gray-500">Pharmacy: {order.pharmacyName}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          order.status === "pending" ? "bg-yellow-100 text-yellow-700" :
+                          order.status === "consulting" ? "bg-blue-100 text-blue-700" :
+                          order.status === "confirmed" ? "bg-green-100 text-green-700" :
+                          order.status === "preparing" ? "bg-purple-100 text-purple-700" :
+                          order.status === "ready" ? "bg-emerald-100 text-emerald-700" :
+                          "bg-gray-100 text-gray-700"
+                        }`}>
+                          {order.status}
+                        </span>
+                      </div>
+                      {order.pharmacyNotes && (
+                        <div className="mt-3 p-2 bg-emerald-50 border border-emerald-200 rounded">
+                          <p className="text-sm"><span className="font-medium text-emerald-700">Pharmacist:</span> {order.pharmacyNotes}</p>
+                        </div>
+                      )}
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      order.status === "pending" ? "bg-yellow-100 text-yellow-700" :
-                      order.status === "consulting" ? "bg-blue-100 text-blue-700" :
-                      order.status === "confirmed" ? "bg-green-100 text-green-700" :
-                      order.status === "preparing" ? "bg-purple-100 text-purple-700" :
-                      order.status === "ready" ? "bg-emerald-100 text-emerald-700" :
-                      "bg-gray-100 text-gray-700"
-                    }`}>
-                      {order.status}
-                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active Subscriptions */}
+            {subscriptions.filter(s => s.status === "active").length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">🏥 My Pharmacy Subscriptions</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {subscriptions.filter(s => s.status === "active").map((sub) => (
+                    <div key={sub.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200 p-5">
+                      <h3 className="font-bold text-emerald-800 text-lg">{sub.pharmacyName}</h3>
+                      <p className="text-sm text-emerald-600">📍 {sub.pharmacyCity}</p>
+                      <p className="font-bold text-emerald-700 mt-2">KES {sub.monthlyAmount.toLocaleString()}/month</p>
+                      <button
+                        onClick={() => handleCancelSubscription(sub.id)}
+                        className="mt-3 w-full px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FIND PHARMACY TAB */}
+        {activeTab === "find-pharmacy" && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Find a Pharmacy</h2>
+            
+            {pharmacies.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div className="text-4xl mb-4">🏥</div>
+                <h3 className="font-semibold text-gray-900 mb-2">No verified pharmacies available</h3>
+                <p className="text-gray-500 text-sm">Check back later for pharmacies in your area</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pharmacies.map((pharmacy) => (
+                  <div key={pharmacy.id} className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h3 className="font-semibold text-gray-900 text-lg">{pharmacy.pharmacyName}</h3>
+                    <p className="text-gray-500 text-sm mt-1">📍 {pharmacy.city}</p>
+                    <p className="text-gray-500 text-sm">📧 {pharmacy.address}</p>
+                    
+                    <div className="mt-4 flex flex-col gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedPharmacy(pharmacy);
+                          setShowOrderModal(true);
+                        }}
+                        className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+                      >
+                        💊 Request Medication
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedPharmacy(pharmacy);
+                          setShowSubscriptionModal(true);
+                        }}
+                        className="w-full bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700"
+                      >
+                        📅 Subscribe Monthly
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm"><span className="font-medium">Your symptoms:</span> {order.symptoms}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PRESCRIPTIONS TAB */}
+        {activeTab === "prescriptions" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">My Prescriptions</h2>
+              <button
+                onClick={() => setShowPrescriptionModal(true)}
+                className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+              >
+                + Upload Prescription
+              </button>
+            </div>
+
+            {prescriptions.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div className="text-4xl mb-4">📄</div>
+                <h3 className="font-semibold text-gray-900 mb-2">No prescriptions yet</h3>
+                <p className="text-gray-500 text-sm mb-4">Upload your prescriptions to get them filled</p>
+                <button
+                  onClick={() => setShowPrescriptionModal(true)}
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+                >
+                  Upload Your First Prescription
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {prescriptions.map((prescription) => (
+                  <div key={prescription.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{prescription.medicationName}</h3>
+                        <p className="text-sm text-gray-500">Dosage: {prescription.dosage} | Qty: {prescription.quantity}</p>
+                        <p className="text-sm text-gray-500">Prescriber: {prescription.prescriberName}</p>
+                        <p className="text-sm text-gray-500">Pharmacy: {prescription.pharmacyName || "Pending assignment"}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        prescription.status === "verified" ? "bg-green-100 text-green-700" :
+                        prescription.status === "pending" ? "bg-yellow-100 text-yellow-700" :
+                        prescription.status === "rejected" ? "bg-red-100 text-red-700" :
+                        "bg-emerald-100 text-emerald-700"
+                      }`}>
+                        {prescription.status}
+                      </span>
+                    </div>
+                    {prescription.notes && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded">
+                        <p className="text-sm text-gray-600">{prescription.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* DELIVERY TRACKING TAB */}
+        {activeTab === "delivery" && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Track Delivery</h2>
+
+            {orders.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div className="text-4xl mb-4">📦</div>
+                <h3 className="font-semibold text-gray-900 mb-2">No orders yet</h3>
+                <p className="text-gray-500 text-sm">Your delivery tracking will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((order) => (
+                  <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-lg">{order.medicationName}</h3>
+                        <p className="text-gray-500">Pharmacy: {order.pharmacyName}</p>
+                        <p className="text-gray-500">Order #{order.id.slice(0, 8)}</p>
+                      </div>
+                      <span className={`text-sm px-3 py-1 rounded-full ${
+                        order.status === "pending" ? "bg-yellow-100 text-yellow-700" :
+                        order.status === "consulting" ? "bg-blue-100 text-blue-700" :
+                        order.status === "confirmed" ? "bg-green-100 text-green-700" :
+                        order.status === "preparing" ? "bg-purple-100 text-purple-700" :
+                        order.status === "ready" ? "bg-emerald-100 text-emerald-700" :
+                        order.status === "delivered" ? "bg-emerald-200 text-emerald-800" :
+                        "bg-red-100 text-red-700"
+                      }`}>
+                        {order.status.toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Progress Tracker */}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                        <span>Order Placed</span>
+                        <span>Confirmed</span>
+                        <span>Preparing</span>
+                        <span>Ready</span>
+                        <span>Delivered</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full transition-all ${
+                          order.status === "delivered" ? "w-full bg-emerald-500" :
+                          order.status === "ready" ? "w-4/5 bg-emerald-400" :
+                          order.status === "preparing" ? "w-3/5 bg-purple-400" :
+                          order.status === "confirmed" ? "w-2/5 bg-green-400" :
+                          order.status === "consulting" ? "w-1/5 bg-blue-400" :
+                          "w-1/5 bg-yellow-400"
+                        }`} />
+                      </div>
+                    </div>
+
                     {order.pharmacyNotes && (
-                      <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded">
-                        <p className="text-sm"><span className="font-medium text-emerald-700">Pharmacist&apos;s advice:</span></p>
+                      <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                        <p className="text-sm font-medium text-emerald-700">Pharmacist&apos;s Notes:</p>
+                        <p className="text-sm text-gray-700">{order.pharmacyNotes}</p>
+                      </div>
+                    )}
+
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm"><span className="font-medium">Delivery Address:</span> {order.deliveryAddress}</p>
+                      <p className="text-sm"><span className="font-medium">Total:</span> KES {order.totalPrice.toLocaleString()}</p>
+                      <p className="text-sm text-gray-500">Ordered: {new Date(order.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FAMILY PHARMACIST TAB */}
+        {activeTab === "family-pharmacist" && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Family Pharmacist</h2>
+
+            {familyPharmacist ? (
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">👨‍⚕️</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{familyPharmacist.pharmacyName}</h3>
+                    <p className="text-emerald-100">Pharmacist: {familyPharmacist.pharmacistName}</p>
+                    <p className="text-emerald-100 text-sm">Assigned: {new Date(familyPharmacist.assignedAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                {familyPharmacist.notes && (
+                  <div className="mt-4 p-3 bg-white/10 rounded-lg">
+                    <p className="text-sm">{familyPharmacist.notes}</p>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    if (confirm("Remove your family pharmacist?")) {
+                      fetch(`/api/family-pharmacist?id=${familyPharmacist.id}`, { method: "DELETE" })
+                        .then(() => {
+                          setFamilyPharmacist(null);
+                          fetchFamilyPharmacist();
+                        });
+                    }
+                  }}
+                  className="mt-4 px-4 py-2 bg-white/20 text-white rounded-lg text-sm hover:bg-white/30"
+                >
+                  Remove Assignment
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 p-8 text-center mb-6">
+                <div className="text-4xl mb-4">👨‍⚕️</div>
+                <h3 className="font-semibold text-gray-900 mb-2">Assign a Family Pharmacist</h3>
+                <p className="text-gray-500 text-sm mb-4">Get personalized care from one pharmacy that knows your health history</p>
+              </div>
+            )}
+
+            <h3 className="font-semibold text-gray-900 mb-4">Available Pharmacies</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pharmacies.map((pharmacy) => (
+                <div key={pharmacy.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <h4 className="font-semibold text-gray-900">{pharmacy.pharmacyName}</h4>
+                  <p className="text-sm text-gray-500">📍 {pharmacy.city}</p>
+                  {familyPharmacist?.pharmacyId !== pharmacy.id && (
+                    <button
+                      onClick={async () => {
+                        const res = await fetch("/api/family-pharmacist", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            patientId: user.id,
+                            patientName: user.name,
+                            pharmacyId: pharmacy.id,
+                            pharmacyName: pharmacy.pharmacyName,
+                            pharmacistName: "Pharmacist",
+                          }),
+                        });
+                        if (res.ok) {
+                          fetchFamilyPharmacist();
+                        }
+                      }}
+                      className="mt-3 w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+                    >
+                      Select as Family Pharmacist
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TELEPHARMACY TAB */}
+        {activeTab === "telepharmacy" && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Telepharmacy Consultation</h2>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-8 mb-6">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-4">📹</div>
+                <h3 className="font-semibold text-gray-900 text-lg">Video Consultation with a Pharmacist</h3>
+                <p className="text-gray-500 mt-2">Get professional advice from the comfort of your home</p>
+              </div>
+
+              <div className="bg-emerald-50 rounded-xl p-6 mb-6">
+                <h4 className="font-semibold text-emerald-800 mb-3">How it works:</h4>
+                <ol className="list-decimal list-inside text-sm text-emerald-700 space-y-2">
+                  <li>Select a pharmacy for your consultation</li>
+                  <li>Describe your symptoms or health concern</li>
+                  <li>A pharmacist will review and contact you</li>
+                  <li>Receive personalized advice and prescriptions if needed</li>
+                </ol>
+              </div>
+
+              <button
+                onClick={() => setShowTelepharmacyModal(true)}
+                className="w-full bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700"
+              >
+                Start Consultation
+              </button>
+            </div>
+
+            {/* Past Consultations */}
+            <h3 className="font-semibold text-gray-900 mb-4">Past Consultations</h3>
+            {orders.filter(o => o.medicationName.includes("Consultation")).length === 0 ? (
+              <div className="bg-gray-50 rounded-xl p-8 text-center">
+                <p className="text-gray-500">No past consultations</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.filter(o => o.medicationName.includes("Consultation")).map((order) => (
+                  <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{order.pharmacyName}</h4>
+                        <p className="text-sm text-gray-500">Concern: {order.symptoms}</p>
+                        <p className="text-sm text-gray-500">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        order.status === "delivered" || order.status === "confirmed" ? "bg-green-100 text-green-700" :
+                        "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {order.status === "delivered" || order.status === "confirmed" ? "Completed" : "In Progress"}
+                      </span>
+                    </div>
+                    {order.pharmacyNotes && (
+                      <div className="mt-3 p-3 bg-emerald-50 rounded-lg">
+                        <p className="text-sm"><span className="font-medium text-emerald-700">Pharmacist Response:</span></p>
                         <p className="text-sm text-gray-700">{order.pharmacyNotes}</p>
                       </div>
                     )}
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-                    <span>📍 {order.deliveryAddress}</span>
-                  </div>
+        {/* PROFILE TAB */}
+        {activeTab === "profile" && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">My Profile</h2>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <span className="text-3xl">👤</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Link
-            href="/medications"
-            className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="text-3xl mb-3">💊</div>
-            <h3 className="font-semibold text-gray-900">Browse Medications</h3>
-            <p className="text-gray-500 text-sm mt-1">Find medications from verified pharmacies</p>
-          </Link>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="text-3xl mb-3">📋</div>
-            <h3 className="font-semibold text-gray-900">My Orders</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              {orders.length > 0 ? `${orders.length} order${orders.length !== 1 ? "s" : ""}` : "No orders yet"}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="text-3xl mb-3">💬</div>
-            <h3 className="font-semibold text-gray-900">Consultations</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              {pendingOrders.length > 0 ? `${pendingOrders.length} pending` : "No active consultations"}
-            </p>
-          </div>
-
-          <button
-            onClick={() => setShowSubscriptionModal(true)}
-            className="bg-white rounded-xl border-2 border-emerald-200 p-6 hover:shadow-md transition-shadow text-left"
-          >
-            <div className="text-3xl mb-3">🔄</div>
-            <h3 className="font-semibold text-gray-900">Monthly Subscription</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              {subscriptions.length > 0 ? `${subscriptions.filter(s => s.status === "active").length} active` : "Subscribe to a pharmacy"}
-            </p>
-          </button>
-        </div>
-
-        {/* Active Subscriptions */}
-        {subscriptions.filter(s => s.status === "active").length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">🏥 My Pharmacy Subscriptions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {subscriptions.filter(s => s.status === "active").map((sub) => (
-                <div key={sub.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200 p-5">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-bold text-emerald-800 text-lg">{sub.pharmacyName}</h3>
-                      <p className="text-sm text-emerald-600">📍 {sub.pharmacyCity}</p>
-                    </div>
-                    <span className="bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-medium">
-                      {sub.subscriptionType}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Monthly Amount:</span>
-                      <span className="font-bold text-emerald-700">KES {sub.monthlyAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Delivery:</span>
-                      <span className="text-sm text-gray-700">{sub.deliveryAddress}</span>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => handleCancelSubscription(sub.id)}
-                    className="w-full px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
-                  >
-                    Cancel Subscription
-                  </button>
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-lg">{user.name}</h3>
+                  <p className="text-gray-500">{user.email}</p>
+                  <p className="text-gray-500">{user.phone}</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
 
-        {/* Order History */}
-        {orders.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="font-semibold text-gray-900 mb-4">Order History</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 font-medium text-gray-500">Medication</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-500">Pharmacy</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-500">Qty</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-500">Total</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-500">Status</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-500">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.slice(0, 10).map((order) => (
-                    <tr key={order.id} className="border-b border-gray-100">
-                      <td className="py-3 px-2">{order.medicationName}</td>
-                      <td className="py-3 px-2">{order.pharmacyName}</td>
-                      <td className="py-3 px-2">{order.quantity}</td>
-                      <td className="py-3 px-2">KES {order.totalPrice.toLocaleString()}</td>
-                      <td className="py-3 px-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          order.status === "delivered" ? "bg-green-100 text-green-700" :
-                          order.status === "cancelled" ? "bg-red-100 text-red-700" :
-                          "bg-yellow-100 text-yellow-700"
-                        }`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Account info */}
-        <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Account Details</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Name</span>
-              <p className="font-medium text-gray-900 mt-0.5">{user.name}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Email</span>
-              <p className="font-medium text-gray-900 mt-0.5">{user.email}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Phone</span>
-              <p className="font-medium text-gray-900 mt-0.5">{user.phone || "Not provided"}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Country</span>
-              <p className="font-medium text-gray-900 mt-0.5 capitalize">{user.country}</p>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Order Modal */}
-      {showOrderModal && selectedMedication && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Request Medication</h2>
               <button
-                onClick={() => {
-                  setShowOrderModal(false);
-                  setSelectedMedication(null);
-                }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                onClick={() => setShowProfileModal(true)}
+                className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
               >
-                ✕
+                Edit Profile
               </button>
             </div>
 
-            <div className="p-4 bg-emerald-50 rounded-lg mb-4">
-              <p className="font-semibold text-gray-900">{selectedMedication.name}</p>
-              <p className="text-sm text-gray-600">{selectedMedication.whatItCures}</p>
-              <p className="text-lg font-bold text-emerald-600 mt-2">
-                KES {selectedMedication.price.toLocaleString()}
-              </p>
+            {/* Profile Details */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Additional Information</h3>
+              
+              {profile ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Age</p>
+                    <p className="font-medium">{profile.age || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Gender</p>
+                    <p className="font-medium">{profile.gender || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Address</p>
+                    <p className="font-medium">{profile.address || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">City</p>
+                    <p className="font-medium">{profile.city || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Occupation</p>
+                    <p className="font-medium">{profile.occupation || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Education Level</p>
+                    <p className="font-medium">{profile.educationLevel || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Emergency Contact</p>
+                    <p className="font-medium">{profile.emergencyContactName || "Not set"} - {profile.emergencyContactPhone || ""}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Allergies</p>
+                    <p className="font-medium">{profile.allergies || "None recorded"}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No additional profile information. Click &quot;Edit Profile&quot; to add details.</p>
+              )}
             </div>
+          </div>
+        )}
+      </main>
 
-            <form onSubmit={handleSubmitOrder} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={orderForm.quantity}
-                  onChange={(e) => setOrderForm({ ...orderForm, quantity: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                />
+      {/* ORDER MODAL */}
+      {showOrderModal && selectedPharmacy && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Request Medication</h3>
+            <p className="text-sm text-gray-500 mb-4">Pharmacy: {selectedPharmacy.pharmacyName}</p>
+            <form onSubmit={handleSubmitOrder}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Describe your symptoms or reason</label>
+                  <textarea
+                    value={orderForm.symptoms}
+                    onChange={(e) => setOrderForm({ ...orderForm, symptoms: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
+                  <input
+                    type="text"
+                    value={orderForm.deliveryAddress}
+                    onChange={(e) => setOrderForm({ ...orderForm, deliveryAddress: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    required
+                  />
+                </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Describe your symptoms * <span className="text-gray-400 font-normal">(The pharmacist will review this)</span>
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  value={orderForm.symptoms}
-                  onChange={(e) => setOrderForm({ ...orderForm, symptoms: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="e.g. I have had a headache for 2 days, slight fever..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
-                <input
-                  type="text"
-                  required
-                  value={orderForm.deliveryAddress}
-                  onChange={(e) => setOrderForm({ ...orderForm, deliveryAddress: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Full delivery address"
-                />
-              </div>
-
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  <strong>Payment:</strong> Pay on delivery (Cash/M-Pesa when received)
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowOrderModal(false);
-                    setSelectedMedication(null);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  onClick={() => { setShowOrderModal(false); setSelectedPharmacy(null); }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
                 >
                   Submit Request
                 </button>
@@ -625,90 +1231,340 @@ export default function PatientDashboard() {
         </div>
       )}
 
-      {/* Subscription Modal */}
+      {/* SUBSCRIPTION MODAL */}
       {showSubscriptionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">🏥 Monthly Pharmacy Subscription</h2>
-              <button
-                onClick={() => setShowSubscriptionModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg mb-4 border border-emerald-200">
-              <p className="text-sm text-emerald-700">
-                Subscribe to a pharmacy for monthly medication deliveries. Pay a fixed amount each month and get your medications delivered regularly.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmitSubscription} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Pharmacy *</label>
-                <select
-                  required
-                  value={subscriptionForm.pharmacyId}
-                  onChange={(e) => setSubscriptionForm({ ...subscriptionForm, pharmacyId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="">Choose a pharmacy...</option>
-                  {pharmacies.filter(p => p.status === "approved").map((pharmacy) => (
-                    <option key={pharmacy.id} value={pharmacy.id}>
-                      {pharmacy.pharmacyName} - {pharmacy.city}
-                    </option>
-                  ))}
-                </select>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Subscription</h3>
+            <form onSubmit={handleSubmitSubscription}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Pharmacy</label>
+                  <select
+                    value={subscriptionForm.pharmacyId}
+                    onChange={(e) => setSubscriptionForm({ ...subscriptionForm, pharmacyId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Choose a pharmacy...</option>
+                    {pharmacies.map((p) => (
+                      <option key={p.id} value={p.id}>{p.pharmacyName} - {p.city}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Amount (KES)</label>
+                  <input
+                    type="number"
+                    value={subscriptionForm.monthlyAmount}
+                    onChange={(e) => setSubscriptionForm({ ...subscriptionForm, monthlyAmount: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    placeholder="5000"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
+                  <input
+                    type="text"
+                    value={subscriptionForm.deliveryAddress}
+                    onChange={(e) => setSubscriptionForm({ ...subscriptionForm, deliveryAddress: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    required
+                  />
+                </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Amount (KES) *</label>
-                <input
-                  type="number"
-                  required
-                  min="1000"
-                  step="500"
-                  value={subscriptionForm.monthlyAmount}
-                  onChange={(e) => setSubscriptionForm({ ...subscriptionForm, monthlyAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="e.g. 5000"
-                />
-                <p className="text-xs text-gray-500 mt-1">The amount you&apos;ll pay each month for your medications</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
-                <input
-                  type="text"
-                  required
-                  value={subscriptionForm.deliveryAddress}
-                  onChange={(e) => setSubscriptionForm({ ...subscriptionForm, deliveryAddress: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Full delivery address"
-                />
-              </div>
-
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>How it works:</strong> The pharmacy will prepare your monthly medications and deliver them to your address. Payment is made on delivery.
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowSubscriptionModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
                 >
                   Subscribe
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* PRESCRIPTION MODAL */}
+      {showPrescriptionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Prescription</h3>
+            <form onSubmit={handleUploadPrescription}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Medication Name</label>
+                  <input
+                    type="text"
+                    value={prescriptionForm.medicationName}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, medicationName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
+                    <input
+                      type="text"
+                      value={prescriptionForm.dosage}
+                      onChange={(e) => setPrescriptionForm({ ...prescriptionForm, dosage: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      placeholder="e.g. 500mg"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                    <input
+                      type="number"
+                      value={prescriptionForm.quantity}
+                      onChange={(e) => setPrescriptionForm({ ...prescriptionForm, quantity: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prescriber Name</label>
+                  <input
+                    type="text"
+                    value={prescriptionForm.prescriberName}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, prescriberName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prescriber License Number</label>
+                  <input
+                    type="text"
+                    value={prescriptionForm.prescriberLicense}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, prescriberLicense: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Instructions</label>
+                  <textarea
+                    value={prescriptionForm.instructions}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, instructions: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Upload Prescription Document (optional)</label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">PDF, JPG, PNG, DOC up to 10MB</p>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => { setShowPrescriptionModal(false); setSelectedFile(null); }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploadingPrescription}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {uploadingPrescription ? "Uploading..." : "Upload Prescription"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* PROFILE MODAL */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Profile</h3>
+            <form onSubmit={handleSaveProfile}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                    <input
+                      type="number"
+                      value={profileForm.age}
+                      onChange={(e) => setProfileForm({ ...profileForm, age: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select
+                      value={profileForm.gender}
+                      onChange={(e) => setProfileForm({ ...profileForm, gender: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <input
+                    type="text"
+                    value={profileForm.address}
+                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={profileForm.city}
+                    onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Occupation</label>
+                  <input
+                    type="text"
+                    value={profileForm.occupation}
+                    onChange={(e) => setProfileForm({ ...profileForm, occupation: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    placeholder="e.g. Farmer, Teacher, Business"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Education Level</label>
+                  <select
+                    value={profileForm.educationLevel}
+                    onChange={(e) => setProfileForm({ ...profileForm, educationLevel: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">Select...</option>
+                    <option value="primary">Primary</option>
+                    <option value="secondary">Secondary</option>
+                    <option value="certificate">Certificate</option>
+                    <option value="diploma">Diploma</option>
+                    <option value="bachelors">Bachelor&apos;s Degree</option>
+                    <option value="masters">Master&apos;s Degree</option>
+                    <option value="phd">PhD</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Name</label>
+                  <input
+                    type="text"
+                    value={profileForm.emergencyContactName}
+                    onChange={(e) => setProfileForm({ ...profileForm, emergencyContactName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Phone</label>
+                  <input
+                    type="text"
+                    value={profileForm.emergencyContactPhone}
+                    onChange={(e) => setProfileForm({ ...profileForm, emergencyContactPhone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Allergies</label>
+                  <textarea
+                    value={profileForm.allergies}
+                    onChange={(e) => setProfileForm({ ...profileForm, allergies: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    rows={2}
+                    placeholder="List any known allergies"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                >
+                  Save Profile
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* TELEPHARMACY MODAL */}
+      {showTelepharmacyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Start Telepharmacy Consultation</h3>
+            <form onSubmit={handleStartTelepharmacy}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Pharmacy</label>
+                  <select
+                    value={telepharmacyForm.pharmacyId}
+                    onChange={(e) => setTelepharmacyForm({ ...telepharmacyForm, pharmacyId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Choose a pharmacy...</option>
+                    {pharmacies.map((p) => (
+                      <option key={p.id} value={p.id}>{p.pharmacyName} - {p.city}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Describe your health concern</label>
+                  <textarea
+                    value={telepharmacyForm.reason}
+                    onChange={(e) => setTelepharmacyForm({ ...telepharmacyForm, reason: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    rows={4}
+                    placeholder="Describe your symptoms or what you'd like to consult about..."
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowTelepharmacyModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                >
+                  Start Consultation
                 </button>
               </div>
             </form>

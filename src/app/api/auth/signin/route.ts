@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByEmail, getPharmacyByEmail, hashPassword } from "@/lib/store";
+import { getUserByEmail, getPharmacyByEmail, getPharmacyStaffByEmail, hashPassword } from "@/lib/store";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Check pharmacies
+    // Check pharmacy owner (main pharmacy account)
     const pharmacy = getPharmacyByEmail(email);
     if (pharmacy) {
       if (pharmacy.passwordHash !== passwordHash) {
@@ -60,6 +60,33 @@ export async function POST(req: NextRequest) {
           role: pharmacy.role,
           pharmacyName: pharmacy.pharmacyName,
           country: pharmacy.country,
+          isOwner: true,
+        },
+      });
+    }
+
+    // Check pharmacy staff
+    const staff = getPharmacyStaffByEmail(email);
+    if (staff) {
+      if (staff.passwordHash !== passwordHash) {
+        return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
+      }
+      if (!staff.isActive) {
+        return NextResponse.json(
+          { error: "Your staff account has been deactivated. Please contact your pharmacy administrator." },
+          { status: 403 }
+        );
+      }
+      return NextResponse.json({
+        message: "Sign in successful.",
+        user: {
+          id: staff.id,
+          name: staff.name,
+          email: staff.email,
+          role: "pharmacy_staff",
+          staffRole: staff.role,
+          pharmacyId: staff.pharmacyId,
+          isOwner: false,
         },
       });
     }

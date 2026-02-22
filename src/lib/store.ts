@@ -497,3 +497,359 @@ export function clearPharmacyDocuments(pharmacyId: string): Pharmacy | null {
   writeJSON(PHARMACIES_FILE, pharmacies);
   return pharmacies[idx];
 }
+
+// ─── Patient Profile (Extended Info) ──────────────────────────────────────────
+
+export interface PatientProfile {
+  id: string;
+  userId: string;
+  dateOfBirth: string;
+  age: number;
+  gender: "male" | "female" | "other";
+  address: string;
+  city: string;
+  country: "kenya" | "burundi";
+  occupation: string;
+  educationLevel: string;
+  profilePicture: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  medicalNotes: string;
+  allergies: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const PATIENT_PROFILES_FILE = path.join(DATA_DIR, "patient_profiles.json");
+
+export function getPatientProfiles(): PatientProfile[] {
+  return readJSON<PatientProfile>(PATIENT_PROFILES_FILE);
+}
+
+export function getPatientProfileByUserId(userId: string): PatientProfile | undefined {
+  return getPatientProfiles().find((p) => p.userId === userId);
+}
+
+export function getPatientProfileById(id: string): PatientProfile | undefined {
+  return getPatientProfiles().find((p) => p.id === id);
+}
+
+export function createPatientProfile(data: Omit<PatientProfile, "id" | "createdAt" | "updatedAt">): PatientProfile {
+  const profiles = getPatientProfiles();
+  const profile: PatientProfile = {
+    ...data,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  profiles.push(profile);
+  writeJSON(PATIENT_PROFILES_FILE, profiles);
+  return profile;
+}
+
+export function updatePatientProfile(id: string, data: Partial<PatientProfile>): PatientProfile | null {
+  const profiles = getPatientProfiles();
+  const idx = profiles.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  profiles[idx] = {
+    ...profiles[idx],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  writeJSON(PATIENT_PROFILES_FILE, profiles);
+  return profiles[idx];
+}
+
+export function deletePatientProfile(id: string): boolean {
+  const profiles = getPatientProfiles();
+  const filtered = profiles.filter((p) => p.id !== id);
+  if (filtered.length === profiles.length) return false;
+  writeJSON(PATIENT_PROFILES_FILE, filtered);
+  return true;
+}
+
+// ─── Pharmacy Staff ───────────────────────────────────────────────────────────
+
+export interface PharmacyStaff {
+  id: string;
+  pharmacyId: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "pharmacist" | "assistant" | "technician" | "delivery" | "counselor";
+  qualification: string;
+  licenseNumber: string;
+  isActive: boolean;
+  passwordHash: string;
+  createdAt: string;
+}
+
+const PHARMACY_STAFF_FILE = path.join(DATA_DIR, "pharmacy_staff.json");
+
+export function getPharmacyStaff(): PharmacyStaff[] {
+  return readJSON<PharmacyStaff>(PHARMACY_STAFF_FILE);
+}
+
+export function getPharmacyStaffByPharmacy(pharmacyId: string): PharmacyStaff[] {
+  return getPharmacyStaff().filter((s) => s.pharmacyId === pharmacyId);
+}
+
+export function getPharmacyStaffById(id: string): PharmacyStaff | undefined {
+  return getPharmacyStaff().find((s) => s.id === id);
+}
+
+export function getPharmacyStaffByEmail(email: string): PharmacyStaff | undefined {
+  return getPharmacyStaff().find((s) => s.email.toLowerCase() === email.toLowerCase());
+}
+
+export function createPharmacyStaff(data: Omit<PharmacyStaff, "id" | "createdAt" | "isActive">): PharmacyStaff {
+  const staff = getPharmacyStaff();
+  const newStaff: PharmacyStaff = {
+    ...data,
+    id: crypto.randomUUID(),
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  };
+  staff.push(newStaff);
+  writeJSON(PHARMACY_STAFF_FILE, staff);
+  return newStaff;
+}
+
+export function updatePharmacyStaff(id: string, data: Partial<PharmacyStaff>): PharmacyStaff | null {
+  const staff = getPharmacyStaff();
+  const idx = staff.findIndex((s) => s.id === id);
+  if (idx === -1) return null;
+  staff[idx] = { ...staff[idx], ...data };
+  writeJSON(PHARMACY_STAFF_FILE, staff);
+  return staff[idx];
+}
+
+export function deletePharmacyStaff(id: string): boolean {
+  const staff = getPharmacyStaff();
+  const filtered = staff.filter((s) => s.id !== id);
+  if (filtered.length === staff.length) return false;
+  writeJSON(PHARMACY_STAFF_FILE, filtered);
+  return true;
+}
+
+// ─── Prescription ──────────────────────────────────────────────────────────────
+
+export interface Prescription {
+  id: string;
+  patientId: string;
+  patientName: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  medicationName: string;
+  dosage: string;
+  quantity: number;
+  instructions: string;
+  prescriberName: string;
+  prescriberLicense: string;
+  documentUrl: string;
+  status: "pending" | "verified" | "rejected" | "filled";
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const PRESCRIPTIONS_FILE = path.join(DATA_DIR, "prescriptions.json");
+
+export function getPrescriptions(): Prescription[] {
+  return readJSON<Prescription>(PRESCRIPTIONS_FILE);
+}
+
+export function getPrescriptionById(id: string): Prescription | undefined {
+  return getPrescriptions().find((p) => p.id === id);
+}
+
+export function getPrescriptionsByPatient(patientId: string): Prescription[] {
+  return getPrescriptions().filter((p) => p.patientId === patientId);
+}
+
+export function getPrescriptionsByPharmacy(pharmacyId: string): Prescription[] {
+  return getPrescriptions().filter((p) => p.pharmacyId === pharmacyId);
+}
+
+export function createPrescription(data: Omit<Prescription, "id" | "createdAt" | "updatedAt" | "status">): Prescription {
+  const prescriptions = getPrescriptions();
+  const prescription: Prescription = {
+    ...data,
+    id: crypto.randomUUID(),
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  prescriptions.push(prescription);
+  writeJSON(PRESCRIPTIONS_FILE, prescriptions);
+  return prescription;
+}
+
+export function updatePrescription(id: string, data: Partial<Prescription>): Prescription | null {
+  const prescriptions = getPrescriptions();
+  const idx = prescriptions.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  prescriptions[idx] = {
+    ...prescriptions[idx],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  writeJSON(PRESCRIPTIONS_FILE, prescriptions);
+  return prescriptions[idx];
+}
+
+export function deletePrescription(id: string): boolean {
+  const prescriptions = getPrescriptions();
+  const filtered = prescriptions.filter((p) => p.id !== id);
+  if (filtered.length === prescriptions.length) return false;
+  writeJSON(PRESCRIPTIONS_FILE, filtered);
+  return true;
+}
+
+// ─── Patient Record (Pharmacy Counseling Records) ─────────────────────────────
+
+export interface PatientRecord {
+  id: string;
+  pharmacyId: string;
+  patientId: string;
+  patientName: string;
+  patientSex: "male" | "female" | "other";
+  patientAge: number;
+  patientLocation: string;
+  visitDate: string;
+  reasonForVisit: string;
+  symptoms: string;
+  diagnosis: string;
+  medicationGiven: string;
+  medicationDosage: string;
+  reasonForMedication: string;
+  pharmacistNotes: string;
+  followUpDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const PATIENT_RECORDS_FILE = path.join(DATA_DIR, "patient_records.json");
+
+export function getPatientRecords(): PatientRecord[] {
+  return readJSON<PatientRecord>(PATIENT_RECORDS_FILE);
+}
+
+export function getPatientRecordById(id: string): PatientRecord | undefined {
+  return getPatientRecords().find((p) => p.id === id);
+}
+
+export function getPatientRecordsByPharmacy(pharmacyId: string): PatientRecord[] {
+  return getPatientRecords().filter((p) => p.pharmacyId === pharmacyId);
+}
+
+export function getPatientRecordsByPatient(patientId: string): PatientRecord[] {
+  return getPatientRecords().filter((p) => p.patientId === patientId);
+}
+
+export function createPatientRecord(data: Omit<PatientRecord, "id" | "createdAt" | "updatedAt">): PatientRecord {
+  const records = getPatientRecords();
+  const record: PatientRecord = {
+    ...data,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  records.push(record);
+  writeJSON(PATIENT_RECORDS_FILE, records);
+  return record;
+}
+
+export function updatePatientRecord(id: string, data: Partial<PatientRecord>): PatientRecord | null {
+  const records = getPatientRecords();
+  const idx = records.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  records[idx] = {
+    ...records[idx],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  writeJSON(PATIENT_RECORDS_FILE, records);
+  return records[idx];
+}
+
+export function deletePatientRecord(id: string): boolean {
+  const records = getPatientRecords();
+  const filtered = records.filter((p) => p.id !== id);
+  if (filtered.length === records.length) return false;
+  writeJSON(PATIENT_RECORDS_FILE, filtered);
+  return true;
+}
+
+// ─── Family Pharmacist Assignment ────────────────────────────────────────────
+
+export interface FamilyPharmacist {
+  id: string;
+  patientId: string;
+  patientName: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacistName: string;
+  status: "active" | "inactive";
+  assignedAt: string;
+  notes: string;
+}
+
+const FAMILY_PHARMACISTS_FILE = path.join(DATA_DIR, "family_pharmacists.json");
+
+export function getFamilyPharmacists(): FamilyPharmacist[] {
+  return readJSON<FamilyPharmacist>(FAMILY_PHARMACISTS_FILE);
+}
+
+export function getFamilyPharmacistById(id: string): FamilyPharmacist | undefined {
+  return getFamilyPharmacists().find((f) => f.id === id);
+}
+
+export function getFamilyPharmacistsByPatient(patientId: string): FamilyPharmacist[] {
+  return getFamilyPharmacists().filter((f) => f.patientId === patientId);
+}
+
+export function getFamilyPharmacistsByPharmacy(pharmacyId: string): FamilyPharmacist[] {
+  return getFamilyPharmacists().filter((f) => f.pharmacyId === pharmacyId);
+}
+
+export function getActiveFamilyPharmacistByPatient(patientId: string): FamilyPharmacist | undefined {
+  return getFamilyPharmacists().find((f) => f.patientId === patientId && f.status === "active");
+}
+
+export function createFamilyPharmacist(data: Omit<FamilyPharmacist, "id" | "assignedAt" | "status">): FamilyPharmacist {
+  const familyPharmacists = getFamilyPharmacists();
+  // Deactivate any existing active assignment for this patient
+  familyPharmacists.forEach((f) => {
+    if (f.patientId === data.patientId && f.status === "active") {
+      f.status = "inactive";
+    }
+  });
+  
+  const familyPharmacist: FamilyPharmacist = {
+    ...data,
+    id: crypto.randomUUID(),
+    status: "active",
+    assignedAt: new Date().toISOString(),
+  };
+  familyPharmacists.push(familyPharmacist);
+  writeJSON(FAMILY_PHARMACISTS_FILE, familyPharmacists);
+  return familyPharmacist;
+}
+
+export function updateFamilyPharmacist(id: string, data: Partial<FamilyPharmacist>): FamilyPharmacist | null {
+  const familyPharmacists = getFamilyPharmacists();
+  const idx = familyPharmacists.findIndex((f) => f.id === id);
+  if (idx === -1) return null;
+  familyPharmacists[idx] = { ...familyPharmacists[idx], ...data };
+  writeJSON(FAMILY_PHARMACISTS_FILE, familyPharmacists);
+  return familyPharmacists[idx];
+}
+
+export function deleteFamilyPharmacist(id: string): boolean {
+  const familyPharmacists = getFamilyPharmacists();
+  const filtered = familyPharmacists.filter((f) => f.id !== id);
+  if (filtered.length === familyPharmacists.length) return false;
+  writeJSON(FAMILY_PHARMACISTS_FILE, filtered);
+  return true;
+}
