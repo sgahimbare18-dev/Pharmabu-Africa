@@ -193,3 +193,4 @@ export async function GET() {
 |------|---------|
 | Initial | Template created with base setup |
 | 2026-02-22 | Added e-commerce marketplace with medication browsing, orders, and consultations |
+| 2026-02-22 | Added messaging system: admin can view documents inline (full size), pharmacists can request document deletion via messages |
