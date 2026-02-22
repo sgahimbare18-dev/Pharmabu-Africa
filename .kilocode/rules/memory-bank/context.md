@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel complete
+**Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel + File uploads complete
 
-PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, and an admin panel exists for pharmacy approval.
+PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, an admin panel exists for pharmacy approval, and pharmacists can now upload physical credential documents for verification.
 
 ## Recently Completed
 
@@ -57,6 +57,16 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
     - Pharmacist Professional Credentials section (blue card)
     - Pharmacy Business Registration section (green card) with expiry warning
     - Approve/Reject/Revoke actions available directly from modal
+- [x] File upload for credential documents (MVP Phase 1 - Step 4)
+  - Created `/api/upload` API route for handling file uploads
+  - Added `licenseDocument`, `qualificationDocument`, `pharmacyRegDocument` fields to `Pharmacy` interface
+  - Pharmacy registration form now includes 3 file upload inputs:
+    - Upload Pharmacist License Document (Section 2)
+    - Upload Qualification Certificate (Section 3)
+    - Upload Pharmacy Registration Certificate (Section 3)
+  - Files saved to `public/uploads/` with unique UUID filenames
+  - Supports PDF, JPG, PNG, DOC, DOCX (max 10MB)
+  - Admin dashboard modal now shows download links for uploaded documents
 
 ## Current Structure
 
@@ -89,6 +99,7 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
 | `src/app/api/admin/signin/route.ts` | Admin sign-in API | ✅ Ready |
 | `src/app/api/admin/pharmacies/route.ts` | List pharmacies API (admin) | ✅ Ready |
 | `src/app/api/admin/pharmacies/[id]/status/route.ts` | Update pharmacy status API (admin) | ✅ Ready |
+| `src/app/api/upload/route.ts` | File upload API for credential documents | ✅ Ready |
 
 ## Current Focus
 
