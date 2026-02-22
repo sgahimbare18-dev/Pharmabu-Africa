@@ -42,6 +42,26 @@ interface Order {
   createdAt: string;
 }
 
+interface Subscription {
+  id: string;
+  patientId: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacyCity: string;
+  subscriptionType: string;
+  monthlyAmount: number;
+  deliveryAddress: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Pharmacy {
+  id: string;
+  pharmacyName: string;
+  city: string;
+  status: string;
+}
+
 function getStoredUser(): UserSession | null {
   if (typeof window === "undefined") return null;
   const stored = localStorage.getItem("pharmalink_user");
@@ -66,15 +86,49 @@ async function fetchOrders(patientId: string): Promise<Order[]> {
   }
 }
 
+async function fetchSubscriptions(patientId: string): Promise<Subscription[]> {
+  try {
+    const res = await fetch(`/api/subscriptions?patientId=${patientId}`);
+    if (res.ok) {
+      return await res.json();
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching subscriptions:", error);
+    return [];
+  }
+}
+
+async function fetchPharmacies(): Promise<Pharmacy[]> {
+  try {
+    const res = await fetch("/api/admin/pharmacies");
+    if (res.ok) {
+      return await res.json();
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching pharmacies:", error);
+    return [];
+  }
+}
+
 export default function PatientDashboard() {
   const router = useRouter();
   const [user] = useState<UserSession | null>(getStoredUser);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [orderForm, setOrderForm] = useState({
     quantity: "1",
     symptoms: "",
+    deliveryAddress: "",
+  });
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    pharmacyId: "",
+    monthlyAmount: "",
     deliveryAddress: "",
   });
 
@@ -90,6 +144,8 @@ export default function PatientDashboard() {
   useEffect(() => {
     if (user) {
       fetchOrders(user.id).then(setOrders);
+      fetchSubscriptions(user.id).then(setSubscriptions);
+      fetchPharmacies().then(setPharmacies);
       
       // Check if user came from medication marketplace
       const storedMed = localStorage.getItem("selected_medication");
@@ -140,6 +196,59 @@ export default function PatientDashboard() {
       }
     } catch (error) {
       console.error("Error creating order:", error);
+    }
+  }
+
+  async function handleSubmitSubscription(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !subscriptionForm.pharmacyId) return;
+
+    const selectedPharmacy = pharmacies.find(p => p.id === subscriptionForm.pharmacyId);
+    
+    try {
+      const res = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: user.id,
+          patientName: user.name,
+          patientPhone: user.phone,
+          pharmacyId: subscriptionForm.pharmacyId,
+          pharmacyName: selectedPharmacy?.pharmacyName || "",
+          pharmacyCity: selectedPharmacy?.city || "",
+          monthlyAmount: Number(subscriptionForm.monthlyAmount),
+          deliveryAddress: subscriptionForm.deliveryAddress,
+        }),
+      });
+
+      if (res.ok) {
+        setShowSubscriptionModal(false);
+        setSubscriptionForm({ pharmacyId: "", monthlyAmount: "", deliveryAddress: "" });
+        fetchSubscriptions(user.id).then(setSubscriptions);
+      }
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+    }
+  }
+
+  async function handleCancelSubscription(subscriptionId: string) {
+    if (!user) return;
+    
+    try {
+      const res = await fetch("/api/subscriptions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: subscriptionId,
+          status: "cancelled",
+        }),
+      });
+
+      if (res.ok) {
+        fetchSubscriptions(user.id).then(setSubscriptions);
+      }
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
     }
   }
 
@@ -255,7 +364,7 @@ export default function PatientDashboard() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Link
             href="/medications"
             className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
@@ -280,7 +389,58 @@ export default function PatientDashboard() {
               {pendingOrders.length > 0 ? `${pendingOrders.length} pending` : "No active consultations"}
             </p>
           </div>
+
+          <button
+            onClick={() => setShowSubscriptionModal(true)}
+            className="bg-white rounded-xl border-2 border-emerald-200 p-6 hover:shadow-md transition-shadow text-left"
+          >
+            <div className="text-3xl mb-3">🔄</div>
+            <h3 className="font-semibold text-gray-900">Monthly Subscription</h3>
+            <p className="text-gray-500 text-sm mt-1">
+              {subscriptions.length > 0 ? `${subscriptions.filter(s => s.status === "active").length} active` : "Subscribe to a pharmacy"}
+            </p>
+          </button>
         </div>
+
+        {/* Active Subscriptions */}
+        {subscriptions.filter(s => s.status === "active").length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">🏥 My Pharmacy Subscriptions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {subscriptions.filter(s => s.status === "active").map((sub) => (
+                <div key={sub.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200 p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-emerald-800 text-lg">{sub.pharmacyName}</h3>
+                      <p className="text-sm text-emerald-600">📍 {sub.pharmacyCity}</p>
+                    </div>
+                    <span className="bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-medium">
+                      {sub.subscriptionType}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Monthly Amount:</span>
+                      <span className="font-bold text-emerald-700">KES {sub.monthlyAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Delivery:</span>
+                      <span className="text-sm text-gray-700">{sub.deliveryAddress}</span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleCancelSubscription(sub.id)}
+                    className="w-full px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+                  >
+                    Cancel Subscription
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Order History */}
         {orders.length > 0 && (
@@ -435,6 +595,97 @@ export default function PatientDashboard() {
                   className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
                 >
                   Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Subscription Modal */}
+      {showSubscriptionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">🏥 Monthly Pharmacy Subscription</h2>
+              <button
+                onClick={() => setShowSubscriptionModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg mb-4 border border-emerald-200">
+              <p className="text-sm text-emerald-700">
+                Subscribe to a pharmacy for monthly medication deliveries. Pay a fixed amount each month and get your medications delivered regularly.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmitSubscription} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Pharmacy *</label>
+                <select
+                  required
+                  value={subscriptionForm.pharmacyId}
+                  onChange={(e) => setSubscriptionForm({ ...subscriptionForm, pharmacyId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="">Choose a pharmacy...</option>
+                  {pharmacies.filter(p => p.status === "approved").map((pharmacy) => (
+                    <option key={pharmacy.id} value={pharmacy.id}>
+                      {pharmacy.pharmacyName} - {pharmacy.city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Amount (KES) *</label>
+                <input
+                  type="number"
+                  required
+                  min="1000"
+                  step="500"
+                  value={subscriptionForm.monthlyAmount}
+                  onChange={(e) => setSubscriptionForm({ ...subscriptionForm, monthlyAmount: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="e.g. 5000"
+                />
+                <p className="text-xs text-gray-500 mt-1">The amount you&apos;ll pay each month for your medications</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
+                <input
+                  type="text"
+                  required
+                  value={subscriptionForm.deliveryAddress}
+                  onChange={(e) => setSubscriptionForm({ ...subscriptionForm, deliveryAddress: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Full delivery address"
+                />
+              </div>
+
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>How it works:</strong> The pharmacy will prepare your monthly medications and deliver them to your address. Payment is made on delivery.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSubscriptionModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+                >
+                  Subscribe
                 </button>
               </div>
             </form>

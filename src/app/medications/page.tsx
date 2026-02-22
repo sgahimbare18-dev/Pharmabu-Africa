@@ -36,6 +36,24 @@ const categories = [
   "Eye Care",
 ];
 
+// Category-based colors
+const categoryColors: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+  "General": { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", badge: "bg-blue-100 text-blue-700" },
+  "Pain Relief": { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700", badge: "bg-orange-100 text-orange-700" },
+  "Antibiotics": { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", badge: "bg-purple-100 text-purple-700" },
+  "Vitamins": { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", badge: "bg-green-100 text-green-700" },
+  "Diabetes": { bg: "bg-red-50", border: "border-red-200", text: "text-red-700", badge: "bg-red-100 text-red-700" },
+  "Blood Pressure": { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", badge: "bg-rose-100 text-rose-700" },
+  "Allergies": { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-700", badge: "bg-teal-100 text-teal-700" },
+  "Digestive": { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", badge: "bg-amber-100 text-amber-700" },
+  "Skin Care": { bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-700", badge: "bg-pink-100 text-pink-700" },
+  "Eye Care": { bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-700", badge: "bg-cyan-100 text-cyan-700" },
+};
+
+function getCategoryColor(category: string) {
+  return categoryColors[category] || categoryColors["General"];
+}
+
 async function fetchMedications(): Promise<Medication[]> {
   try {
     const res = await fetch("/api/medications");
@@ -168,57 +186,60 @@ export default function MedicationsPage() {
             <p className="text-gray-500 text-sm">Try adjusting your search or filter</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredMedications.map((med) => (
-              <div
-                key={med.id}
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setSelectedMedication(med)}
-              >
-                {med.imageUrl ? (
-                  <div className="h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={med.imageUrl}
-                      alt={med.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                    <span className="text-4xl">💊</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                    {med.category}
-                  </span>
-                  {med.requiresPrescription && (
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                      Rx Required
-                    </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredMedications.map((med) => {
+              const colors = getCategoryColor(med.category);
+              return (
+                <div
+                  key={med.id}
+                  className={`${colors.bg} ${colors.border} border-2 rounded-2xl p-5 hover:shadow-lg transition-all cursor-pointer transform hover:-translate-y-1`}
+                  onClick={() => setSelectedMedication(med)}
+                >
+                  {med.imageUrl ? (
+                    <div className="h-48 bg-white rounded-xl mb-4 flex items-center justify-center overflow-hidden shadow-sm">
+                      <img
+                        src={med.imageUrl}
+                        alt={med.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-48 bg-white rounded-xl mb-4 flex items-center justify-center shadow-sm">
+                      <span className="text-6xl">💊</span>
+                    </div>
                   )}
+                  
+                  <div className="flex justify-between items-start mb-3">
+                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${colors.badge}`}>
+                      {med.category}
+                    </span>
+                    {med.requiresPrescription && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                        Rx Required
+                      </span>
+                    )}
+                  </div>
+                  
+                  <h3 className={`font-bold text-lg ${colors.text} mb-1`}>{med.name}</h3>
+                  {med.genericName && (
+                    <p className="text-xs text-gray-500 mb-3 font-medium">{med.genericName}</p>
+                  )}
+                  
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{med.whatItCures}</p>
+                  
+                  {med.dosage && (
+                    <p className="text-xs text-gray-500 mb-3">{med.dosage}</p>
+                  )}
+                  
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <span className={`font-bold text-xl ${colors.text}`}>KES {med.price.toLocaleString()}</span>
+                    <span className={`text-sm font-medium ${med.stock > 0 ? "text-green-600" : "text-red-600"}`}>
+                      {med.stock > 0 ? `In Stock (${med.stock})` : "Out of Stock"}
+                    </span>
+                  </div>
                 </div>
-                
-                <h3 className="font-semibold text-gray-900 mb-1">{med.name}</h3>
-                {med.genericName && (
-                  <p className="text-xs text-gray-500 mb-2">{med.genericName}</p>
-                )}
-                
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{med.whatItCures}</p>
-                
-                {med.dosage && (
-                  <p className="text-xs text-gray-500 mb-2">{med.dosage}</p>
-                )}
-                
-                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                  <span className="font-bold text-emerald-600">KES {med.price.toLocaleString()}</span>
-                  <span className={`text-xs ${med.stock > 0 ? "text-green-600" : "text-red-600"}`}>
-                    {med.stock > 0 ? `In Stock (${med.stock})` : "Out of Stock"}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -229,7 +250,7 @@ export default function MedicationsPage() {
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               {selectedMedication.imageUrl && (
-                <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                <div className="h-64 bg-gray-100 rounded-xl mb-6 flex items-center justify-center overflow-hidden shadow-md">
                   <img
                     src={selectedMedication.imageUrl}
                     alt={selectedMedication.name}
@@ -240,12 +261,17 @@ export default function MedicationsPage() {
               
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <div className="flex gap-2 mb-2">
-                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                      {selectedMedication.category}
-                    </span>
+                  <div className="flex gap-2 mb-3">
+                    {(() => {
+                      const colors = getCategoryColor(selectedMedication.category);
+                      return (
+                        <span className={`text-sm font-medium px-4 py-1.5 rounded-full ${colors.badge}`}>
+                          {selectedMedication.category}
+                        </span>
+                      );
+                    })()}
                     {selectedMedication.requiresPrescription && (
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                      <span className="text-sm bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full font-medium">
                         Prescription Required
                       </span>
                     )}

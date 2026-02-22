@@ -294,6 +294,77 @@ export function updateOrder(id: string, data: Partial<Order>): Order | null {
   return orders[idx];
 }
 
+// ─── Pharmacy Subscription (Monthly Payments) ─────────────────────────────────
+
+export interface Subscription {
+  id: string;
+  patientId: string;
+  patientName: string;
+  patientPhone: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacyCity: string;
+  subscriptionType: "monthly";
+  monthlyAmount: number;
+  deliveryAddress: string;
+  status: "active" | "paused" | "cancelled";
+  createdAt: string;
+  updatedAt: string;
+}
+
+const SUBSCRIPTIONS_FILE = path.join(DATA_DIR, "subscriptions.json");
+
+export function getSubscriptions(): Subscription[] {
+  return readJSON<Subscription>(SUBSCRIPTIONS_FILE);
+}
+
+export function getSubscriptionById(id: string): Subscription | undefined {
+  return getSubscriptions().find((s) => s.id === id);
+}
+
+export function getSubscriptionsByPatient(patientId: string): Subscription[] {
+  return getSubscriptions().filter((s) => s.patientId === patientId);
+}
+
+export function getSubscriptionsByPharmacy(pharmacyId: string): Subscription[] {
+  return getSubscriptions().filter((s) => s.pharmacyId === pharmacyId);
+}
+
+export function getActiveSubscriptionsByPatient(patientId: string): Subscription[] {
+  return getSubscriptionsByPatient(patientId).filter((s) => s.status === "active");
+}
+
+export function createSubscription(data: Omit<Subscription, "id" | "createdAt" | "updatedAt" | "status">): Subscription {
+  const subscriptions = getSubscriptions();
+  const subscription: Subscription = {
+    ...data,
+    id: crypto.randomUUID(),
+    status: "active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  subscriptions.push(subscription);
+  writeJSON(SUBSCRIPTIONS_FILE, subscriptions);
+  return subscription;
+}
+
+export function updateSubscription(id: string, data: Partial<Subscription>): Subscription | null {
+  const subscriptions = getSubscriptions();
+  const idx = subscriptions.findIndex((s) => s.id === id);
+  if (idx === -1) return null;
+  subscriptions[idx] = {
+    ...subscriptions[idx],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  writeJSON(SUBSCRIPTIONS_FILE, subscriptions);
+  return subscriptions[idx];
+}
+
+export function cancelSubscription(id: string): Subscription | null {
+  return updateSubscription(id, { status: "cancelled" });
+}
+
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
 /**
