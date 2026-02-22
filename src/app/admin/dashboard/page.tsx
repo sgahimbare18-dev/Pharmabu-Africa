@@ -530,7 +530,7 @@ export default function AdminDashboardPage() {
               <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold">P</span>
               </div>
-              <span className="font-bold text-gray-900">PharmaLink Africa</span>
+              <span className="font-bold text-gray-900">PharmabuLink Africa</span>
             </Link>
             <span className="text-gray-300">|</span>
             <span className="text-sm font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded">

@@ -1,10 +1,10 @@
-# Active Context: PharmaLink Africa
+# Active Context: PharmabuLink Africa
 
 ## Current State
 
 **Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel + E-commerce/Marketplace complete
 
-PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, an admin panel exists for pharmacy approval, pharmacists can upload credential documents, and now includes a full e-commerce marketplace where patients can browse medications, chat with pharmacists about symptoms, and order for pay-on-delivery.
+PharmabuLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, an admin panel exists for pharmacy approval, pharmacists can upload credential documents, and now includes a full e-commerce marketplace where patients can browse medications, chat with pharmacists about symptoms, and order for pay-on-delivery.
 
 ## Recently Completed
 
@@ -14,7 +14,7 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
 - [x] ESLint configuration
 - [x] Memory bank documentation
 - [x] Recipe system for common features
-- [x] PharmaLink Africa landing page (full build)
+- [x] PharmabuLink Africa landing page (full build)
   - Navbar (mobile-responsive)
   - Hero section with prescription/delivery/counseling card mockups
   - TrustBanner with compliance indicators

@@ -1,5 +1,5 @@
 /**
- * Simple file-based data store for PharmaLink Africa.
+ * Simple file-based data store for PharmabuLink Africa.
  * Uses a JSON file in /tmp for persistence across requests in development.
  * In production, replace with a real database (PostgreSQL via Drizzle or Prisma).
  */
@@ -544,7 +544,7 @@ export function processPayment(
     paymentMethod,
     paymentReference,
     status: "completed",
-    paymentMessage: `Payment received! You paid ${amount} ${currency} (${amountInKES.toFixed(2)} KES) for ${medicationData.name}. Your medication will be prepared by ${pharmacyData.name}. Thank you for using PharmaLink Africa!`,
+    paymentMessage: `Payment received! You paid ${amount} ${currency} (${amountInKES.toFixed(2)} KES) for ${medicationData.name}. Your medication will be prepared by ${pharmacyData.name}. Thank you for using PharmabuLink Africa!`,
     payoutStatus: "pending",
     payoutReference: "",
   });

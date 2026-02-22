@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
             <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">P</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">PharmaLink Africa</span>
+            <span className="text-xl font-bold text-gray-900">PharmabuLink Africa</span>
           </Link>
           <p className="mt-2 text-sm text-gray-500">Admin Portal</p>
         </div>

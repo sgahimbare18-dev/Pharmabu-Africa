@@ -77,7 +77,7 @@ export default function HowItWorks() {
             Simple, Secure, Compliant
           </h2>
           <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-            Whether you&apos;re a patient or a pharmacist, PharmaLink Africa guides you through every step with full legal compliance.
+            Whether you&apos;re a patient or a pharmacist, PharmabuLink Africa guides you through every step with full legal compliance.
           </p>
         </div>
 

@@ -15,7 +15,7 @@ export default function CTA() {
               Ready to Transform Healthcare in Africa?
             </h2>
             <p className="text-emerald-100/80 text-lg mb-8 max-w-2xl mx-auto">
-              Join PharmaLink Africa — where patient safety, pharmacist accountability, and regulatory compliance come first.
+              Join PharmabuLink Africa — where patient safety, pharmacist accountability, and regulatory compliance come first.
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center">

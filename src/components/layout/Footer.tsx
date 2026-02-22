@@ -112,7 +112,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <p>© 2026 PharmaLink Africa. All rights reserved.</p>
+          <p>© 2026 PharmabuLink Africa. All rights reserved.</p>
           <p className="text-gray-600">
             This platform is a regulated medical system. All actions are logged and legally binding.
           </p>

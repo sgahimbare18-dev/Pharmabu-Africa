@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PharmaLink Africa — Digital Pharmacy Marketplace",
+  title: "PharmabuLink Africa — Digital Pharmacy Marketplace",
   description:
     "A secure, legally compliant digital pharmacy marketplace and telepharmacy platform for Africa. Verified pharmacies, prescription management, and delivery.",
 };

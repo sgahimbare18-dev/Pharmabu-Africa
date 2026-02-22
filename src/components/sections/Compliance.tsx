@@ -72,7 +72,7 @@ export default function Compliance() {
             This Is Not a Normal E-Commerce App
           </h2>
           <p className="text-gray-500 text-lg max-w-3xl mx-auto">
-            PharmaLink Africa is a regulated medical system, a legal evidence storage system, and a healthcare compliance tool.{" "}
+            PharmabuLink Africa is a regulated medical system, a legal evidence storage system, and a healthcare compliance tool.{" "}
             <strong className="text-gray-700">Security and audit trail are more important than UI design.</strong>
           </p>
         </div>
