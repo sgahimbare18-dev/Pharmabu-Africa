@@ -972,6 +972,7 @@ function PharmacyTable({ pharmacies, loading, actionLoading, onView, onStatusCha
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacist</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">License #</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Docs</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Registered</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
@@ -987,6 +988,17 @@ function PharmacyTable({ pharmacies, loading, actionLoading, onView, onStatusCha
                   <td className="px-4 py-3 text-gray-600">{p.pharmacistName}</td>
                   <td className="px-4 py-3 text-gray-600 font-mono text-xs">{p.licenseNumber}</td>
                   <td className="px-4 py-3 text-gray-600">{p.city}, <span className="capitalize">{p.country}</span></td>
+                  <td className="px-4 py-3">
+                    {(p.licenseDocument || p.qualificationDocument || p.pharmacyRegDocument) ? (
+                      <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ {[
+                        p.licenseDocument ? 1 : 0,
+                        p.qualificationDocument ? 1 : 0,
+                        p.pharmacyRegDocument ? 1 : 0
+                      ].reduce((a, b) => a + b, 0)}</span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">✗ None</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{new Date(p.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
                   <td className="px-4 py-3">{statusBadge(p.status)}</td>
                   <td className="px-4 py-3">
