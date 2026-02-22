@@ -11,6 +11,8 @@ interface UserSession {
   phone: string;
   role: "patient";
   country: string;
+  adminView?: boolean;
+  adminName?: string;
 }
 
 interface Medication {
@@ -135,7 +137,7 @@ export default function PatientDashboard() {
   useEffect(() => {
     if (!user) {
       router.push("/signin");
-    } else if (user.role !== "patient") {
+    } else if (!user.adminView && user.role !== "patient") {
       router.push("/dashboard/pharmacy");
     }
   }, [user, router]);
@@ -253,8 +255,14 @@ export default function PatientDashboard() {
   }
 
   function handleSignOut() {
-    localStorage.removeItem("pharmalink_user");
-    router.push("/");
+    if (user?.adminView) {
+      // If admin viewing as patient, return to admin dashboard
+      localStorage.removeItem("pharmalink_user");
+      router.push("/admin/dashboard");
+    } else {
+      localStorage.removeItem("pharmalink_user");
+      router.push("/");
+    }
   }
 
   const pendingOrders = orders.filter(o => o.status === "pending" || o.status === "consulting");
@@ -300,6 +308,21 @@ export default function PatientDashboard() {
           </div>
         </div>
       </header>
+
+      {/* Admin View Banner */}
+      {user?.adminView && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-amber-800 text-sm">
+              <span className="font-medium">👁️ Admin View:</span>
+              <span>You are viewing this patient board as <strong>{user.adminName}</strong></span>
+            </div>
+            <Link href="/admin/dashboard" className="text-sm text-amber-700 hover:text-amber-900 font-medium">
+              ← Return to Admin Dashboard
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Main */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

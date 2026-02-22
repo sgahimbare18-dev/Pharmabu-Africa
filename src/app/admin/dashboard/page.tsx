@@ -98,7 +98,7 @@ interface Message {
   createdAt: string;
 }
 
-type ViewType = "pharmacies" | "patients" | "orders" | "subscriptions" | "medications" | "messages";
+type ViewType = "pharmacies" | "patients" | "orders" | "subscriptions" | "medications" | "messages" | "access_patients" | "access_pharmacies";
 type FilterStatus = "all" | "pending" | "verified" | "rejected";
 type OrderStatus = "all" | "pending" | "consulting" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
 
@@ -378,6 +378,38 @@ export default function AdminDashboardPage() {
     router.push("/admin/login");
   }
 
+  function handleViewAsPatient(patient: Patient) {
+    // Store admin view session for patient
+    const viewSession = {
+      id: patient.id,
+      name: patient.name,
+      email: patient.email,
+      phone: patient.phone,
+      role: "patient" as const,
+      country: patient.country,
+      adminView: true,
+      adminName: adminName,
+    };
+    localStorage.setItem("pharmalink_user", JSON.stringify(viewSession));
+    router.push("/dashboard/patient");
+  }
+
+  function handleViewAsPharmacy(pharmacy: Pharmacy) {
+    // Store admin view session for pharmacy
+    const viewSession = {
+      id: pharmacy.id,
+      name: pharmacy.pharmacistName,
+      email: pharmacy.email,
+      role: "pharmacy" as const,
+      pharmacyName: pharmacy.pharmacyName,
+      country: pharmacy.country,
+      adminView: true,
+      adminName: adminName,
+    };
+    localStorage.setItem("pharmalink_user", JSON.stringify(viewSession));
+    router.push("/dashboard/pharmacy");
+  }
+
   // Filter data based on current view
   const filteredPharmacies = pharmacies.filter((p) => filter === "all" || p.status === filter);
   const filteredOrders = orders.filter((o) => orderFilter === "all" || o.status === orderFilter);
@@ -458,6 +490,95 @@ export default function AdminDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Access Boards - Quick Access to Patient and Pharmacy Dashboards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Access Patient Board */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">👤</span>
+                <h2 className="text-lg font-semibold text-gray-900">Access Patient Board</h2>
+              </div>
+              <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                {patients.length} patients
+              </span>
+            </div>
+            <div className="p-4 max-h-64 overflow-y-auto">
+              {patients.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No registered patients</p>
+              ) : (
+                <div className="space-y-2">
+                  {patients.slice(0, 5).map((patient) => (
+                    <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{patient.name}</p>
+                        <p className="text-xs text-gray-500">{patient.email}</p>
+                      </div>
+                      <button
+                        onClick={() => handleViewAsPatient(patient)}
+                        className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        View Board
+                      </button>
+                    </div>
+                  ))}
+                  {patients.length > 5 && (
+                    <button
+                      onClick={() => setActiveView("access_patients")}
+                      className="w-full text-center text-sm text-blue-600 hover:text-blue-800 py-2"
+                    >
+                      View all {patients.length} patients →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Access Pharmacy Board */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-emerald-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🏥</span>
+                <h2 className="text-lg font-semibold text-gray-900">Access Pharmacy Board</h2>
+              </div>
+              <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                {pharmacies.length} pharmacies
+              </span>
+            </div>
+            <div className="p-4 max-h-64 overflow-y-auto">
+              {pharmacies.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No registered pharmacies</p>
+              ) : (
+                <div className="space-y-2">
+                  {pharmacies.slice(0, 5).map((pharmacy) => (
+                    <div key={pharmacy.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{pharmacy.pharmacyName}</p>
+                        <p className="text-xs text-gray-500">{pharmacy.city} • {pharmacy.status}</p>
+                      </div>
+                      <button
+                        onClick={() => handleViewAsPharmacy(pharmacy)}
+                        className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors"
+                      >
+                        View Board
+                      </button>
+                    </div>
+                  ))}
+                  {pharmacies.length > 5 && (
+                    <button
+                      onClick={() => setActiveView("access_pharmacies")}
+                      className="w-full text-center text-sm text-emerald-600 hover:text-emerald-800 py-2"
+                    >
+                      View all {pharmacies.length} pharmacies →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-500 text-sm mt-1">
