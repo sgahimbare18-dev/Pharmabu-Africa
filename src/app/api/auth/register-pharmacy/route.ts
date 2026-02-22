@@ -22,6 +22,9 @@ export async function POST(req: NextRequest) {
       operatingHours,
       servicesOffered,
       password,
+      licenseDocument,
+      qualificationDocument,
+      pharmacyRegDocument,
     } = body as {
       pharmacyName: string;
       pharmacistName: string;
@@ -40,6 +43,9 @@ export async function POST(req: NextRequest) {
       operatingHours: string;
       servicesOffered: string;
       password: string;
+      licenseDocument?: string;
+      qualificationDocument?: string;
+      pharmacyRegDocument?: string;
     };
 
     // Required field validation
@@ -92,6 +98,10 @@ export async function POST(req: NextRequest) {
       servicesOffered: servicesOffered || "",
       passwordHash: hashPassword(password),
       role: "pharmacy",
+      // File upload paths
+      licenseDocument: licenseDocument || "",
+      qualificationDocument: qualificationDocument || "",
+      pharmacyRegDocument: pharmacyRegDocument || "",
     });
 
     return NextResponse.json(

@@ -26,6 +26,10 @@ interface PharmacyRow {
   // Operations
   operatingHours: string;
   servicesOffered: string;
+  // File uploads
+  licenseDocument: string;
+  qualificationDocument: string;
+  pharmacyRegDocument: string;
   // Meta
   status: "pending" | "verified" | "rejected";
   createdAt: string;
@@ -382,6 +386,18 @@ export default function AdminDashboardPage() {
                   <DetailRow label="Qualification" value={selectedPharmacy.pharmacistQualification} highlight />
                   <DetailRow label="University / Institution" value={selectedPharmacy.pharmacistUniversity} highlight />
                   <DetailRow label="Year of Graduation" value={selectedPharmacy.pharmacistGraduationYear} highlight />
+                  {selectedPharmacy.licenseDocument && (
+                    <div className="pt-2 border-t border-blue-200">
+                      <a
+                        href={selectedPharmacy.licenseDocument}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 text-sm font-medium"
+                      >
+                        📄 View License Document →
+                      </a>
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -405,6 +421,30 @@ export default function AdminDashboardPage() {
                       ? new Date(selectedPharmacy.pharmacyRegExpiry) < new Date()
                       : false}
                   />
+                  {(selectedPharmacy.qualificationDocument || selectedPharmacy.pharmacyRegDocument) && (
+                    <div className="pt-2 border-t border-emerald-200 space-y-2">
+                      {selectedPharmacy.qualificationDocument && (
+                        <a
+                          href={selectedPharmacy.qualificationDocument}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-emerald-700 hover:text-emerald-900 text-sm font-medium"
+                        >
+                          🎓 View Qualification Certificate →
+                        </a>
+                      )}
+                      {selectedPharmacy.pharmacyRegDocument && (
+                        <a
+                          href={selectedPharmacy.pharmacyRegDocument}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-emerald-700 hover:text-emerald-900 text-sm font-medium"
+                        >
+                          🏥 View Pharmacy Registration Certificate →
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </section>
             </div>

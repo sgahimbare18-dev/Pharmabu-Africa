@@ -35,10 +35,46 @@ export default function RegisterPharmacyPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { url: string; filename: string }>>({});
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError("");
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, fieldName: string) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading((prev) => ({ ...prev, [fieldName]: true }));
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to upload file");
+        return;
+      }
+
+      setUploadedFiles((prev) => ({
+        ...prev,
+        [fieldName]: { url: data.url, filename: data.filename },
+      }));
+    } catch {
+      setError("Failed to upload file. Please try again.");
+    } finally {
+      setUploading((prev) => ({ ...prev, [fieldName]: false }));
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,6 +114,10 @@ export default function RegisterPharmacyPage() {
           operatingHours: form.operatingHours,
           servicesOffered: form.servicesOffered,
           password: form.password,
+          // File upload URLs
+          licenseDocument: uploadedFiles.licenseDocument?.url || "",
+          qualificationDocument: uploadedFiles.qualificationDocument?.url || "",
+          pharmacyRegDocument: uploadedFiles.pharmacyRegDocument?.url || "",
         }),
       });
       const data = await res.json();
@@ -231,6 +271,32 @@ export default function RegisterPharmacyPage() {
               />
             </div>
 
+            <div>
+              <label className={labelClass}>Upload Pharmacist License Document *</label>
+              <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:border-emerald-400/50 transition">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={(e) => handleFileUpload(e, "licenseDocument")}
+                  className="hidden"
+                  id="licenseDocument"
+                  required
+                />
+                <label htmlFor="licenseDocument" className="cursor-pointer">
+                  {uploading.licenseDocument ? (
+                    <span className="text-emerald-300">Uploading...</span>
+                  ) : uploadedFiles.licenseDocument ? (
+                    <span className="text-emerald-400">✅ {uploadedFiles.licenseDocument.filename}</span>
+                  ) : (
+                    <span className="text-emerald-300/70">
+                      📎 Click to upload license document (PDF, JPG, PNG, DOC)
+                    </span>
+                  )}
+                </label>
+              </div>
+              <p className="text-emerald-300/50 text-xs mt-1">Upload a clear copy of your pharmacist license/registration certificate.</p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className={labelClass}>University / Institution *</label>
@@ -280,6 +346,58 @@ export default function RegisterPharmacyPage() {
               <p className="text-emerald-300/50 text-xs mt-1">
                 The official registration number of your pharmacy premises as issued by the regulatory authority.
               </p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Upload Qualification Certificate *</label>
+              <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:border-emerald-400/50 transition">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={(e) => handleFileUpload(e, "qualificationDocument")}
+                  className="hidden"
+                  id="qualificationDocument"
+                  required
+                />
+                <label htmlFor="qualificationDocument" className="cursor-pointer">
+                  {uploading.qualificationDocument ? (
+                    <span className="text-emerald-300">Uploading...</span>
+                  ) : uploadedFiles.qualificationDocument ? (
+                    <span className="text-emerald-400">✅ {uploadedFiles.qualificationDocument.filename}</span>
+                  ) : (
+                    <span className="text-emerald-300/70">
+                      📎 Click to upload qualification certificate (PDF, JPG, PNG, DOC)
+                    </span>
+                  )}
+                </label>
+              </div>
+              <p className="text-emerald-300/50 text-xs mt-1">Upload your highest pharmacy qualification certificate (degree, diploma).</p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Upload Pharmacy Registration Certificate *</label>
+              <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:border-emerald-400/50 transition">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={(e) => handleFileUpload(e, "pharmacyRegDocument")}
+                  className="hidden"
+                  id="pharmacyRegDocument"
+                  required
+                />
+                <label htmlFor="pharmacyRegDocument" className="cursor-pointer">
+                  {uploading.pharmacyRegDocument ? (
+                    <span className="text-emerald-300">Uploading...</span>
+                  ) : uploadedFiles.pharmacyRegDocument ? (
+                    <span className="text-emerald-400">✅ {uploadedFiles.pharmacyRegDocument.filename}</span>
+                  ) : (
+                    <span className="text-emerald-300/70">
+                      📎 Click to upload pharmacy registration certificate (PDF, JPG, PNG, DOC)
+                    </span>
+                  )}
+                </label>
+              </div>
+              <p className="text-emerald-300/50 text-xs mt-1">Upload the pharmacy premises registration/operating license certificate.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

@@ -94,6 +94,10 @@ export interface Pharmacy {
   // Additional info
   operatingHours: string;          // e.g. "Mon-Fri 8am-8pm, Sat 9am-5pm"
   servicesOffered: string;         // e.g. "Dispensing, Telepharmacy, Delivery"
+  // Uploaded credential documents (file paths)
+  licenseDocument: string;        // Path to pharmacist license document
+  qualificationDocument: string;  // Path to qualification certificate
+  pharmacyRegDocument: string;    // Path to pharmacy registration certificate
   // Auth
   passwordHash: string;
   role: "pharmacy";
