@@ -94,10 +94,43 @@ async function fetchOrders(pharmacyId: string): Promise<Order[]> {
 export default function PharmacyDashboard() {
   const router = useRouter();
   const [user] = useState<PharmacySession | null>(getStoredUser);
-  const [activeTab, setActiveTab] = useState<"medications" | "consultations" | "messages">("medications");
+  const [activeTab, setActiveTab] = useState<"medications" | "consultations" | "messages" | "family-doctor" | "staff" | "patients" | "delivery">("medications");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [familyDoctorServices, setFamilyDoctorServices] = useState<any[]>([]);
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
+  const [patientRecords, setPatientRecords] = useState<any[]>([]);
   const [showAddMedication, setShowAddMedication] = useState(false);
+  const [showFamilyDoctorModal, setShowFamilyDoctorModal] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [showPatientRecordModal, setShowPatientRecordModal] = useState(false);
+  const [familyDoctorForm, setFamilyDoctorForm] = useState({
+    description: "",
+    monthlyFee: "5000",
+    servicesIncluded: "",
+  });
+  const [staffForm, setStaffForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "assistant",
+    qualification: "",
+    licenseNumber: "",
+  });
+  const [patientRecordForm, setPatientRecordForm] = useState({
+    patientName: "",
+    patientSex: "male",
+    patientAge: "",
+    patientLocation: "",
+    reasonForVisit: "",
+    symptoms: "",
+    diagnosis: "",
+    medicationGiven: "",
+    medicationDosage: "",
+    reasonForMedication: "",
+    pharmacistNotes: "",
+    followUpDate: "",
+  });
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [pharmacyNotes, setPharmacyNotes] = useState("");
   
@@ -394,6 +427,46 @@ export default function PharmacyDashboard() {
             }`}
           >
             📨 Messages ({messages.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("family-doctor")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "family-doctor"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            🏥 Family Doctor
+          </button>
+          <button
+            onClick={() => setActiveTab("staff")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "staff"
+                ? "bg-purple-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            👥 Staff
+          </button>
+          <button
+            onClick={() => setActiveTab("patients")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "patients"
+                ? "bg-orange-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            📋 Patients
+          </button>
+          <button
+            onClick={() => setActiveTab("delivery")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "delivery"
+                ? "bg-yellow-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            🚚 Delivery
           </button>
         </div>
 

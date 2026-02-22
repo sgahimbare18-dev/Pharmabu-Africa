@@ -790,7 +790,12 @@ export interface FamilyPharmacist {
   pharmacyId: string;
   pharmacyName: string;
   pharmacistName: string;
-  status: "active" | "inactive";
+  status: "active" | "inactive" | "pending_payment";
+  monthlyFee: number;  // Monthly payment amount
+  paymentStatus: "pending" | "paid" | "overdue" | "cancelled";
+  paymentMethod: "mpesa" | "mobile_money" | "card" | "";
+  paymentDate: string;
+  nextPaymentDate: string;
   assignedAt: string;
   notes: string;
 }
@@ -817,7 +822,7 @@ export function getActiveFamilyPharmacistByPatient(patientId: string): FamilyPha
   return getFamilyPharmacists().find((f) => f.patientId === patientId && f.status === "active");
 }
 
-export function createFamilyPharmacist(data: Omit<FamilyPharmacist, "id" | "assignedAt" | "status">): FamilyPharmacist {
+export function createFamilyPharmacist(data: Omit<FamilyPharmacist, "id" | "assignedAt" | "status" | "paymentStatus" | "paymentDate" | "nextPaymentDate">): FamilyPharmacist {
   const familyPharmacists = getFamilyPharmacists();
   // Deactivate any existing active assignment for this patient
   familyPharmacists.forEach((f) => {
@@ -826,10 +831,17 @@ export function createFamilyPharmacist(data: Omit<FamilyPharmacist, "id" | "assi
     }
   });
   
+  const now = new Date();
+  const nextMonth = new Date(now);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  
   const familyPharmacist: FamilyPharmacist = {
     ...data,
     id: crypto.randomUUID(),
-    status: "active",
+    status: "pending_payment",  // Wait for payment
+    paymentStatus: "pending",
+    paymentDate: "",
+    nextPaymentDate: nextMonth.toISOString(),
     assignedAt: new Date().toISOString(),
   };
   familyPharmacists.push(familyPharmacist);
@@ -851,5 +863,148 @@ export function deleteFamilyPharmacist(id: string): boolean {
   const filtered = familyPharmacists.filter((f) => f.id !== id);
   if (filtered.length === familyPharmacists.length) return false;
   writeJSON(FAMILY_PHARMACISTS_FILE, filtered);
+  return true;
+}
+
+// ─── Family Doctor Service (Pharmacy offers to be family doctor) ──────────────────
+
+export interface FamilyDoctorService {
+  id: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacistName: string;
+  description: string;
+  monthlyFee: number;  // Monthly charge for family doctor service
+  servicesIncluded: string;  // What's included in the service
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const FAMILY_DOCTOR_SERVICES_FILE = path.join(DATA_DIR, "family_doctor_services.json");
+
+export function getFamilyDoctorServices(): FamilyDoctorService[] {
+  return readJSON<FamilyDoctorService>(FAMILY_DOCTOR_SERVICES_FILE);
+}
+
+export function getFamilyDoctorServiceById(id: string): FamilyDoctorService | undefined {
+  return getFamilyDoctorServices().find((f) => f.id === id);
+}
+
+export function getFamilyDoctorServicesByPharmacy(pharmacyId: string): FamilyDoctorService[] {
+  return getFamilyDoctorServices().filter((f) => f.pharmacyId === pharmacyId);
+}
+
+export function getAvailableFamilyDoctorServices(): FamilyDoctorService[] {
+  return getFamilyDoctorServices().filter((f) => f.isAvailable);
+}
+
+export function createFamilyDoctorService(data: Omit<FamilyDoctorService, "id" | "createdAt" | "updatedAt" | "isAvailable">): FamilyDoctorService {
+  const services = getFamilyDoctorServices();
+  const service: FamilyDoctorService = {
+    ...data,
+    id: crypto.randomUUID(),
+    isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  services.push(service);
+  writeJSON(FAMILY_DOCTOR_SERVICES_FILE, services);
+  return service;
+}
+
+export function updateFamilyDoctorService(id: string, data: Partial<FamilyDoctorService>): FamilyDoctorService | null {
+  const services = getFamilyDoctorServices();
+  const idx = services.findIndex((f) => f.id === id);
+  if (idx === -1) return null;
+  services[idx] = { ...services[idx], ...data, updatedAt: new Date().toISOString() };
+  writeJSON(FAMILY_DOCTOR_SERVICES_FILE, services);
+  return services[idx];
+}
+
+export function deleteFamilyDoctorService(id: string): boolean {
+  const services = getFamilyDoctorServices();
+  const filtered = services.filter((f) => f.id !== id);
+  if (filtered.length === services.length) return false;
+  writeJSON(FAMILY_DOCTOR_SERVICES_FILE, filtered);
+  return true;
+}
+
+// ─── Profile Update Request (Pending Admin Approval) ─────────────────────────────
+
+export interface ProfileUpdateRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  requestedFields: {
+    name?: string;
+    phone?: string;
+    dateOfBirth?: string;
+    age?: number;
+    gender?: string;
+    address?: string;
+    city?: string;
+    occupation?: string;
+    educationLevel?: string;
+    profilePicture?: string;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
+    medicalNotes?: string;
+    allergies?: string;
+  };
+  status: "pending" | "approved" | "rejected";
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const PROFILE_UPDATE_REQUESTS_FILE = path.join(DATA_DIR, "profile_update_requests.json");
+
+export function getProfileUpdateRequests(): ProfileUpdateRequest[] {
+  return readJSON<ProfileUpdateRequest>(PROFILE_UPDATE_REQUESTS_FILE);
+}
+
+export function getProfileUpdateRequestById(id: string): ProfileUpdateRequest | undefined {
+  return getProfileUpdateRequests().find((p) => p.id === id);
+}
+
+export function getProfileUpdateRequestsByUser(userId: string): ProfileUpdateRequest[] {
+  return getProfileUpdateRequests().filter((p) => p.userId === userId);
+}
+
+export function getPendingProfileUpdateRequests(): ProfileUpdateRequest[] {
+  return getProfileUpdateRequests().filter((p) => p.status === "pending");
+}
+
+export function createProfileUpdateRequest(data: Omit<ProfileUpdateRequest, "id" | "status" | "adminNotes" | "createdAt" | "updatedAt">): ProfileUpdateRequest {
+  const requests = getProfileUpdateRequests();
+  const request: ProfileUpdateRequest = {
+    ...data,
+    id: crypto.randomUUID(),
+    status: "pending",
+    adminNotes: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  requests.push(request);
+  writeJSON(PROFILE_UPDATE_REQUESTS_FILE, requests);
+  return request;
+}
+
+export function updateProfileUpdateRequest(id: string, data: Partial<ProfileUpdateRequest>): ProfileUpdateRequest | null {
+  const requests = getProfileUpdateRequests();
+  const idx = requests.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  requests[idx] = { ...requests[idx], ...data, updatedAt: new Date().toISOString() };
+  writeJSON(PROFILE_UPDATE_REQUESTS_FILE, requests);
+  return requests[idx];
+}
+
+export function deleteProfileUpdateRequest(id: string): boolean {
+  const requests = getProfileUpdateRequests();
+  const filtered = requests.filter((p) => p.id !== id);
+  if (filtered.length === requests.length) return false;
+  writeJSON(PROFILE_UPDATE_REQUESTS_FILE, filtered);
   return true;
 }

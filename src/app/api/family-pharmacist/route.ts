@@ -60,6 +60,8 @@ export async function POST(request: Request) {
       pharmacyId: body.pharmacyId,
       pharmacyName: body.pharmacyName,
       pharmacistName: body.pharmacistName,
+      monthlyFee: body.monthlyFee || 500,
+      paymentMethod: "",
       notes: body.notes || "",
     });
 

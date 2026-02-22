@@ -102,8 +102,35 @@ interface FamilyPharmacist {
   pharmacyName: string;
   pharmacistName: string;
   status: string;
+  monthlyFee: number;
+  paymentStatus: string;
+  paymentMethod: string;
+  paymentDate: string;
+  nextPaymentDate: string;
   assignedAt: string;
   notes: string;
+}
+
+interface ProfileUpdateRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  requestedFields: Record<string, any>;
+  status: string;
+  adminNotes: string;
+  createdAt: string;
+}
+
+interface FamilyDoctorService {
+  id: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacistName: string;
+  description: string;
+  monthlyFee: number;
+  servicesIncluded: string;
+  isAvailable: boolean;
 }
 
 function getStoredUser(): UserSession | null {
@@ -129,6 +156,8 @@ export default function PatientDashboard() {
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [familyPharmacist, setFamilyPharmacist] = useState<FamilyPharmacist | null>(null);
+  const [profileUpdateRequests, setProfileUpdateRequests] = useState<ProfileUpdateRequest[]>([]);
+  const [familyDoctorServices, setFamilyDoctorServices] = useState<FamilyDoctorService[]>([]);
   
   // Modals
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -222,6 +251,8 @@ export default function PatientDashboard() {
       fetchPharmacies();
       fetchPrescriptions();
       fetchFamilyPharmacist();
+      fetchProfileUpdateRequests();
+      fetchFamilyDoctorServices();
       
       // Check if user came from medication marketplace
       const storedMed = localStorage.getItem("selected_medication");
@@ -286,6 +317,30 @@ export default function PatientDashboard() {
       }
     } catch (error) {
       console.error("Error fetching family pharmacist:", error);
+    }
+  }
+
+  async function fetchProfileUpdateRequests() {
+    try {
+      const res = await fetch(`/api/profile-update-request?userId=${user?.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfileUpdateRequests(data);
+      }
+    } catch (error) {
+      console.error("Error fetching profile update requests:", error);
+    }
+  }
+
+  async function fetchFamilyDoctorServices() {
+    try {
+      const res = await fetch("/api/family-doctor-service?available=true");
+      if (res.ok) {
+        const data = await res.json();
+        setFamilyDoctorServices(data);
+      }
+    } catch (error) {
+      console.error("Error fetching family doctor services:", error);
     }
   }
 
@@ -435,40 +490,25 @@ export default function PatientDashboard() {
     if (!user) return;
 
     try {
-      let res;
-      
-      if (profile?.id) {
-        // Update existing profile
-        res = await fetch("/api/patient-profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: profile.id,
-            userId: user.id,
-            ...profileForm,
-            age: Number(profileForm.age),
-            country: user.country,
-          }),
-        });
-      } else {
-        // Create new profile
-        res = await fetch("/api/patient-profile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            ...profileForm,
-            age: Number(profileForm.age),
-            country: user.country,
-          }),
-        });
-      }
+      // First, submit a profile update request for admin approval
+      const requestRes = await fetch("/api/profile-update-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          requestedFields: profileForm,
+        }),
+      });
 
-      if (res.ok) {
-        const data = await res.json();
-        setProfile(data);
+      if (requestRes.ok) {
         setShowProfileModal(false);
-        alert("Profile saved successfully!");
+        alert("Profile update request submitted! An admin will review and approve your changes.");
+        // Fetch any existing requests
+        fetchProfileUpdateRequests();
+      } else {
+        alert("Failed to submit profile update request. Please try again.");
       }
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -981,6 +1021,45 @@ export default function PatientDashboard() {
                     <p className="text-emerald-100 text-sm">Assigned: {new Date(familyPharmacist.assignedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
+                
+                {/* Payment Status */}
+                <div className="mt-4 p-3 bg-white/10 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span>Monthly Fee:</span>
+                    <span className="font-bold">KES {familyPharmacist.monthlyFee || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span>Payment Status:</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      familyPharmacist.paymentStatus === 'paid' ? 'bg-green-500' : 
+                      familyPharmacist.paymentStatus === 'pending' ? 'bg-yellow-500' :
+                      familyPharmacist.paymentStatus === 'overdue' ? 'bg-red-500' : 'bg-gray-500'
+                    }`}>
+                      {familyPharmacist.paymentStatus === 'paid' ? '✅ Paid' : 
+                       familyPharmacist.paymentStatus === 'pending' ? '⏳ Pending Payment' :
+                       familyPharmacist.paymentStatus === 'overdue' ? '⚠️ Overdue' : 'Not Active'}
+                    </span>
+                  </div>
+                  {familyPharmacist.nextPaymentDate && (
+                    <div className="mt-2 text-sm text-emerald-100">
+                      Next payment: {new Date(familyPharmacist.nextPaymentDate).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+
+                {familyPharmacist.status === 'pending_payment' && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => {
+                        alert("Payment feature coming soon! You will be able to pay via M-Pesa or Mobile Money.");
+                      }}
+                      className="w-full bg-yellow-500 text-black px-4 py-3 rounded-lg font-medium hover:bg-yellow-400"
+                    >
+                      💰 Pay Now to Activate
+                    </button>
+                  </div>
+                )}
+
                 {familyPharmacist.notes && (
                   <div className="mt-4 p-3 bg-white/10 rounded-lg">
                     <p className="text-sm">{familyPharmacist.notes}</p>
@@ -1009,37 +1088,97 @@ export default function PatientDashboard() {
               </div>
             )}
 
-            <h3 className="font-semibold text-gray-900 mb-4">Available Pharmacies</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">Available Family Pharmacists (with Monthly Subscription)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {pharmacies.map((pharmacy) => (
                 <div key={pharmacy.id} className="bg-white rounded-xl border border-gray-200 p-4">
                   <h4 className="font-semibold text-gray-900">{pharmacy.pharmacyName}</h4>
                   <p className="text-sm text-gray-500">📍 {pharmacy.city}</p>
                   {familyPharmacist?.pharmacyId !== pharmacy.id && (
-                    <button
-                      onClick={async () => {
-                        const res = await fetch("/api/family-pharmacist", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            patientId: user.id,
-                            patientName: user.name,
-                            pharmacyId: pharmacy.id,
-                            pharmacyName: pharmacy.pharmacyName,
-                            pharmacistName: "Pharmacist",
-                          }),
-                        });
-                        if (res.ok) {
-                          fetchFamilyPharmacist();
-                        }
-                      }}
-                      className="mt-3 w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
-                    >
-                      Select as Family Pharmacist
-                    </button>
+                    <div className="mt-3">
+                      <p className="text-emerald-600 font-semibold">Monthly Fee: KES 500</p>
+                      <button
+                        onClick={async () => {
+                          const res = await fetch("/api/family-pharmacist", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              patientId: user.id,
+                              patientName: user.name,
+                              pharmacyId: pharmacy.id,
+                              pharmacyName: pharmacy.pharmacyName,
+                              pharmacistName: "Pharmacist",
+                              monthlyFee: 500,
+                            }),
+                          });
+                          if (res.ok) {
+                            alert("Family pharmacist assigned! Please complete payment to activate.");
+                            fetchFamilyPharmacist();
+                          }
+                        }}
+                        className="mt-2 w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+                      >
+                        Hire for KES 500/month
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* Family Doctor Services Section */}
+            <div className="mt-8">
+              <h3 className="font-semibold text-gray-900 mb-4">🏥 Family Doctor Services</h3>
+              <p className="text-gray-500 text-sm mb-4">Pharmacies offering dedicated family doctor services with monthly packages</p>
+              {familyDoctorServices.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl p-8 text-center">
+                  <p className="text-gray-500">No family doctor services available yet. Check back later!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {familyDoctorServices.map((service) => (
+                    <div key={service.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{service.pharmacyName}</h4>
+                          <p className="text-sm text-gray-500">👨‍⚕️ {service.pharmacistName}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-blue-600">KES {service.monthlyFee}</p>
+                          <p className="text-xs text-gray-500">/month</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-2">{service.description}</p>
+                      <div className="mt-3 p-2 bg-white/50 rounded-lg">
+                        <p className="text-xs text-gray-600"><strong>Includes:</strong> {service.servicesIncluded}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const res = await fetch("/api/family-pharmacist", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              patientId: user.id,
+                              patientName: user.name,
+                              pharmacyId: service.pharmacyId,
+                              pharmacyName: service.pharmacyName,
+                              pharmacistName: service.pharmacistName,
+                              monthlyFee: service.monthlyFee,
+                            }),
+                          });
+                          if (res.ok) {
+                            alert("Family doctor service hired! Please complete payment to activate.");
+                            fetchFamilyPharmacist();
+                          }
+                        }}
+                        className="mt-3 w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+                      >
+                        Hire Family Doctor
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
