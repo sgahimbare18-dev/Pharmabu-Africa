@@ -175,6 +175,20 @@ export default function MedicationsPage() {
                 className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => setSelectedMedication(med)}
               >
+                {med.imageUrl ? (
+                  <div className="h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={med.imageUrl}
+                      alt={med.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                    <span className="text-4xl">💊</span>
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                     {med.category}
@@ -214,6 +228,16 @@ export default function MedicationsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
+              {selectedMedication.imageUrl && (
+                <div className="h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={selectedMedication.imageUrl}
+                    alt={selectedMedication.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <div className="flex gap-2 mb-2">

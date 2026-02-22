@@ -119,7 +119,11 @@ export default function PharmacyDashboard() {
     stock: "",
     category: "General",
     requiresPrescription: false,
+    imageUrl: "",
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -186,6 +190,26 @@ export default function PharmacyDashboard() {
   async function handleAddMedication(e: React.FormEvent) {
     e.preventDefault();
     try {
+      let imageUrl = "";
+      
+      // Upload image first if selected
+      if (selectedImage) {
+        setUploadingImage(true);
+        const imageFormData = new FormData();
+        imageFormData.append("file", selectedImage);
+        
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: imageFormData,
+        });
+        
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          imageUrl = uploadData.url || "";
+        }
+        setUploadingImage(false);
+      }
+      
       const res = await fetch("/api/medications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -194,6 +218,7 @@ export default function PharmacyDashboard() {
           ...formData,
           price: Number(formData.price),
           stock: Number(formData.stock),
+          imageUrl,
         }),
       });
       
@@ -211,7 +236,10 @@ export default function PharmacyDashboard() {
           stock: "",
           category: "General",
           requiresPrescription: false,
+          imageUrl: "",
         });
+        setSelectedImage(null);
+        setImagePreview(null);
         fetchMedications(user!.id).then(setMedications);
       }
     } catch (error) {
@@ -375,6 +403,19 @@ export default function PharmacyDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {medications.map((med) => (
                   <div key={med.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                    {med.imageUrl ? (
+                      <div className="h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={med.imageUrl}
+                          alt={med.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                        <span className="text-4xl">💊</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold text-gray-900">{med.name}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -632,6 +673,53 @@ export default function PharmacyDashboard() {
                       <option value="Eye Care">Eye Care</option>
                       <option value="Other">Other</option>
                     </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Drug Image</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-500 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedImage(file);
+                          setImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      className="hidden"
+                      id="drug-image"
+                    />
+                    <label htmlFor="drug-image" className="cursor-pointer">
+                      {imagePreview ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={imagePreview}
+                            alt="Drug preview"
+                            className="max-h-32 mx-auto rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSelectedImage(null);
+                              setImagePreview(null);
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="py-2">
+                          <div className="text-3xl mb-2">📷</div>
+                          <p className="text-sm text-gray-500">Click to upload drug image</p>
+                          <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
+                        </div>
+                      )}
+                    </label>
                   </div>
                 </div>
 
