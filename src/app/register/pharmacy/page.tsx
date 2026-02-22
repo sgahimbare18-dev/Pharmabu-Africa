@@ -147,7 +147,7 @@ export default function RegisterPharmacyPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
             <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold">PL</span>
+              <span className="text-white font-bold">PA</span>
             </div>
             <span className="font-bold text-white text-xl">
               PharmaLink <span className="text-emerald-400">Africa</span>
