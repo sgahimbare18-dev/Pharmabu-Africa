@@ -74,7 +74,7 @@ export default function RegisterPage() {
               <span className="text-white font-bold">PA</span>
             </div>
             <span className="font-bold text-white text-xl">
-              PharmaLink <span className="text-emerald-400">Africa</span>
+              PharmaBu <span className="text-emerald-400">Africa</span>
             </span>
           </Link>
           <h1 className="text-2xl font-bold text-white mt-6 mb-1">Create your account</h1>

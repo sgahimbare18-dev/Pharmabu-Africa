@@ -16,7 +16,7 @@ export default function Navbar() {
               <span className="text-white font-bold text-sm">PA</span>
             </div>
             <span className="font-bold text-gray-900 text-lg">
-              PharmaLink <span className="text-emerald-600">Africa</span>
+              PharmaBu <span className="text-emerald-600">Africa</span>
             </span>
           </Link>
 

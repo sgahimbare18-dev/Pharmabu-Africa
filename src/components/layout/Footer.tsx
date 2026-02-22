@@ -10,7 +10,7 @@ export default function Footer() {
                 <span className="text-white font-bold text-sm">PA</span>
               </div>
               <span className="font-bold text-white text-lg">
-                PharmaLink <span className="text-emerald-400">Africa</span>
+                PharmaBu <span className="text-emerald-400">Africa</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed mb-4">

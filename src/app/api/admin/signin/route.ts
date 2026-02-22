@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       user: {
         email: ADMIN_EMAIL,
         role: "admin",
-        name: "PharmaLink Admin",
+        name: "PharmaBu Admin",
       },
     });
   } catch (err) {
