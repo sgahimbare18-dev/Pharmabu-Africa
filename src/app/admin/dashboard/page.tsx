@@ -35,6 +35,18 @@ interface PharmacyRow {
   createdAt: string;
 }
 
+interface Message {
+  id: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacistName: string;
+  subject: string;
+  content: string;
+  status: "unread" | "read" | "responded";
+  type: "deletion_request" | "general";
+  createdAt: string;
+}
+
 type FilterStatus = "all" | "pending" | "verified" | "rejected";
 
 export default function AdminDashboardPage() {
@@ -46,6 +58,12 @@ export default function AdminDashboardPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [adminName, setAdminName] = useState("Admin");
   const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyRow | null>(null);
+  const [activeView, setActiveView] = useState<"pharmacies" | "messages">("pharmacies");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [deletingDocs, setDeletingDocs] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("pharmalink_admin");
@@ -67,6 +85,12 @@ export default function AdminDashboardPage() {
 
     fetchPharmacies();
   }, [router]);
+
+  useEffect(() => {
+    if (activeView === "messages") {
+      fetchMessages();
+    }
+  }, [activeView]);
 
   async function fetchPharmacies() {
     setLoading(true);
@@ -114,6 +138,76 @@ export default function AdminDashboardPage() {
       setMessage({ type: "error", text: "Network error. Please try again." });
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function fetchMessages() {
+    setMessagesLoading(true);
+    try {
+      const res = await fetch("/api/messages", {
+        headers: { "x-admin-session": "pharmalink-admin" },
+      });
+      const data = (await res.json()) as { messages?: Message[] };
+      if (res.ok && data.messages) {
+        setMessages(data.messages);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setMessagesLoading(false);
+    }
+  }
+
+  async function handleDeleteDocuments(pharmacyId: string) {
+    if (!confirm("Are you sure you want to delete all documents for this pharmacy? This action cannot be undone.")) return;
+    setDeletingDocs(true);
+    try {
+      const res = await fetch(`/api/admin/pharmacies/${pharmacyId}/documents`, {
+        method: "DELETE",
+        headers: { "x-admin-session": "pharmalink-admin" },
+      });
+      const data = (await res.json()) as { error?: string; pharmacy?: PharmacyRow };
+      if (res.ok) {
+        setMessage({ type: "success", text: "Documents deleted successfully." });
+        // Update pharmacy in list
+        setPharmacies((prev) =>
+          prev.map((p) => (p.id === pharmacyId ? { ...p, licenseDocument: "", qualificationDocument: "", pharmacyRegDocument: "" } : p))
+        );
+        if (selectedPharmacy?.id === pharmacyId) {
+          setSelectedPharmacy((prev) => prev ? { ...prev, licenseDocument: "", qualificationDocument: "", pharmacyRegDocument: "" } : null);
+        }
+        // Refresh messages
+        fetchMessages();
+      } else {
+        setMessage({ type: "error", text: data.error ?? "Failed to delete documents." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error. Please try again." });
+    } finally {
+      setDeletingDocs(false);
+    }
+  }
+
+  async function handleMarkMessageRead(messageId: string) {
+    try {
+      const res = await fetch(`/api/messages/${messageId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-session": "pharmalink-admin",
+        },
+        body: JSON.stringify({ status: "read" }),
+      });
+      if (res.ok) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, status: "read" } : m))
+        );
+        if (selectedMessage?.id === messageId) {
+          setSelectedMessage((prev) => prev ? { ...prev, status: "read" } : null);
+        }
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -177,10 +271,34 @@ export default function AdminDashboardPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Pharmacy Registrations</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-500 text-sm mt-1">
             Review credentials and approve or reject pharmacy registration requests.
           </p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveView("pharmacies")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeView === "pharmacies"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+          >
+            🏥 Pharmacies ({pharmacies.length})
+          </button>
+          <button
+            onClick={() => setActiveView("messages")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeView === "messages"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+          >
+            💬 Messages ({messages.filter(m => m.status === "unread").length})
+          </button>
         </div>
 
         {/* Stats */}
@@ -214,109 +332,176 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center text-gray-400">Loading pharmacies…</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">
-              No {filter === "all" ? "" : filter} pharmacies found.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacy</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacist</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">License #</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Registered</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{p.pharmacyName}</div>
-                        <div className="text-xs text-gray-400">{p.email}</div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{p.pharmacistName}</td>
-                      <td className="px-4 py-3 text-gray-600 font-mono text-xs">{p.licenseNumber}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {p.city},{" "}
-                        <span className="capitalize">{p.country}</span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
-                        {new Date(p.createdAt).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </td>
-                      <td className="px-4 py-3">{statusBadge(p.status)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2 flex-wrap">
-                          {/* View Details button */}
-                          <button
-                            onClick={() => setSelectedPharmacy(p)}
-                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors border border-blue-200"
-                          >
-                            View Details
-                          </button>
-                          {/* Status actions */}
-                          {p.status === "pending" ? (
-                            <>
-                              <button
-                                onClick={() => handleStatusChange(p.id, "verified")}
-                                disabled={actionLoading === p.id}
-                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-medium rounded-lg transition-colors"
-                              >
-                                {actionLoading === p.id ? "…" : "Approve"}
-                              </button>
-                              <button
-                                onClick={() => handleStatusChange(p.id, "rejected")}
-                                disabled={actionLoading === p.id}
-                                className="px-3 py-1 bg-red-100 hover:bg-red-200 disabled:bg-red-50 text-red-700 text-xs font-medium rounded-lg transition-colors"
-                              >
-                                {actionLoading === p.id ? "…" : "Reject"}
-                              </button>
-                            </>
-                          ) : p.status === "verified" ? (
-                            <button
-                              onClick={() => handleStatusChange(p.id, "rejected")}
-                              disabled={actionLoading === p.id}
-                              className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-lg transition-colors"
-                            >
-                              Revoke
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleStatusChange(p.id, "verified")}
-                              disabled={actionLoading === p.id}
-                              className="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-lg transition-colors"
-                            >
-                              Re-approve
-                            </button>
+        {/* Messages View */}
+        {activeView === "messages" && (
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            {messagesLoading ? (
+              <div className="p-12 text-center text-gray-400">Loading messages…</div>
+            ) : messages.length === 0 ? (
+              <div className="p-12 text-center text-gray-400">
+                <div className="text-4xl mb-4">💬</div>
+                <h3 className="font-semibold text-gray-900 mb-2">No messages yet</h3>
+                <p className="text-gray-500 text-sm">Messages from pharmacies will appear here</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                      msg.status === "unread" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedMessage(msg);
+                      if (msg.status === "unread") {
+                        handleMarkMessageRead(msg.id);
+                      }
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {msg.status === "unread" && (
+                            <span className="w-2 h-2 bg-blue-600 rounded-full" />
+                          )}
+                          <span className="font-medium text-gray-900">{msg.subject}</span>
+                          {msg.type === "deletion_request" && (
+                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                              Document Deletion Request
+                            </span>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                        <p className="text-sm text-gray-500">
+                          From: {msg.pharmacyName} ({msg.pharmacistName})
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1 line-clamp-1">{msg.content}</p>
+                      </div>
+                      <div className="text-xs text-gray-400 ml-4">
+                        {new Date(msg.createdAt).toLocaleDateString("en-GB", {
+                          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-        <div className="mt-4 text-xs text-gray-400 text-right">
-          <button onClick={fetchPharmacies} className="hover:text-gray-600 transition-colors">
-            ↻ Refresh list
-          </button>
-        </div>
+        {/* Pharmacies Table */}
+        {activeView === "pharmacies" && (
+          <>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {loading ? (
+                <div className="p-12 text-center text-gray-400">Loading pharmacies…</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">
+                  No {filter === "all" ? "" : filter} pharmacies found.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacy</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacist</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">License #</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Registered</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filtered.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-gray-900">{p.pharmacyName}</div>
+                            <div className="text-xs text-gray-400">{p.email}</div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{p.pharmacistName}</td>
+                          <td className="px-4 py-3 text-gray-600 font-mono text-xs">{p.licenseNumber}</td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {p.city},{" "}
+                            <span className="capitalize">{p.country}</span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {new Date(p.createdAt).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </td>
+                          <td className="px-4 py-3">{statusBadge(p.status)}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2 flex-wrap">
+                              {/* View Details button */}
+                              <button
+                                onClick={() => setSelectedPharmacy(p)}
+                                className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors border border-blue-200"
+                              >
+                                View Details
+                              </button>
+                              {/* Status actions */}
+                              {p.status === "pending" ? (
+                                <>
+                                  <button
+                                    onClick={() => handleStatusChange(p.id, "verified")}
+                                    disabled={actionLoading === p.id}
+                                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-medium rounded-lg transition-colors"
+                                  >
+                                    {actionLoading === p.id ? "…" : "Approve"}
+                                  </button>
+                                  <button
+                                    onClick={() => handleStatusChange(p.id, "rejected")}
+                                    disabled={actionLoading === p.id}
+                                    className="px-3 py-1 bg-red-100 hover:bg-red-200 disabled:bg-red-50 text-red-700 text-xs font-medium rounded-lg transition-colors"
+                                  >
+                                    {actionLoading === p.id ? "…" : "Reject"}
+                                  </button>
+                                </>
+                              ) : p.status === "verified" ? (
+                                <button
+                                  onClick={() => handleStatusChange(p.id, "rejected")}
+                                  disabled={actionLoading === p.id}
+                                  className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-lg transition-colors"
+                                >
+                                  Revoke
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleStatusChange(p.id, "verified")}
+                                  disabled={actionLoading === p.id}
+                                  className="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-lg transition-colors"
+                                >
+                                  Re-approve
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 text-xs text-gray-400 text-right">
+              <button onClick={fetchPharmacies} className="hover:text-gray-600 transition-colors">
+                ↻ Refresh list
+              </button>
+            </div>
+          </>
+        )}
       </main>
+
+      {/* Document Viewer Modal */}
+      {selectedDocument && <DocumentViewerModal documentUrl={selectedDocument} onClose={() => setSelectedDocument(null)} />}
+
+      {/* Message Detail Modal */}
+      {selectedMessage && <MessageModal message={selectedMessage} onClose={() => setSelectedMessage(null)} onDeleteDocs={handleDeleteDocuments} />}
 
       {/* ── Details Modal ── */}
       {selectedPharmacy && (
@@ -388,14 +573,12 @@ export default function AdminDashboardPage() {
                   <DetailRow label="Year of Graduation" value={selectedPharmacy.pharmacistGraduationYear} highlight />
                   {selectedPharmacy.licenseDocument && (
                     <div className="pt-2 border-t border-blue-200">
-                      <a
-                        href={selectedPharmacy.licenseDocument}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => setSelectedDocument(selectedPharmacy.licenseDocument)}
                         className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 text-sm font-medium"
                       >
                         📄 View License Document →
-                      </a>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -424,24 +607,20 @@ export default function AdminDashboardPage() {
                   {(selectedPharmacy.qualificationDocument || selectedPharmacy.pharmacyRegDocument) && (
                     <div className="pt-2 border-t border-emerald-200 space-y-2">
                       {selectedPharmacy.qualificationDocument && (
-                        <a
-                          href={selectedPharmacy.qualificationDocument}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => setSelectedDocument(selectedPharmacy.qualificationDocument)}
                           className="block text-emerald-700 hover:text-emerald-900 text-sm font-medium"
                         >
                           🎓 View Qualification Certificate →
-                        </a>
+                        </button>
                       )}
                       {selectedPharmacy.pharmacyRegDocument && (
-                        <a
-                          href={selectedPharmacy.pharmacyRegDocument}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => setSelectedDocument(selectedPharmacy.pharmacyRegDocument)}
                           className="block text-emerald-700 hover:text-emerald-900 text-sm font-medium"
                         >
                           🏥 View Pharmacy Registration Certificate →
-                        </a>
+                        </button>
                       )}
                     </div>
                   )}
@@ -451,12 +630,17 @@ export default function AdminDashboardPage() {
 
             {/* Modal footer — action buttons */}
             <div className="flex items-center justify-between gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
-              <button
-                onClick={() => setSelectedPharmacy(null)}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Close
-              </button>
+              <div className="flex gap-2">
+                {(selectedPharmacy.licenseDocument || selectedPharmacy.qualificationDocument || selectedPharmacy.pharmacyRegDocument) && (
+                  <button
+                    onClick={() => handleDeleteDocuments(selectedPharmacy.id)}
+                    disabled={deletingDocs}
+                    className="px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    {deletingDocs ? "…" : "🗑️ Delete All Documents"}
+                  </button>
+                )}
+              </div>
               <div className="flex gap-3">
                 {selectedPharmacy.status === "pending" && (
                   <>
@@ -503,7 +687,89 @@ export default function AdminDashboardPage() {
   );
 }
 
-// ── Helper component ──────────────────────────────────────────────────────────
+// Document Viewer Modal
+function DocumentViewerModal({ documentUrl, onClose }: { documentUrl: string; onClose: () => void }) {
+  if (!documentUrl) return null;
+  
+  const isPdf = documentUrl.toLowerCase().endsWith('.pdf');
+  
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="font-semibold text-gray-900">Document Viewer</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 bg-gray-100">
+          {isPdf ? (
+            <iframe src={documentUrl} className="w-full h-full rounded-lg" title="Document viewer" />
+          ) : (
+            <img src={documentUrl} alt="Document" className="max-w-full max-h-full object-contain mx-auto rounded-lg" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Message Detail Modal
+function MessageModal({ message, onClose, onDeleteDocs }: { message: Message; onClose: () => void; onDeleteDocs: (pharmacyId: string) => void }) {
+  const [deleting, setDeleting] = useState(false);
+  
+  const handleDelete = async () => {
+    setDeleting(true);
+    await onDeleteDocs(message.pharmacyId);
+    setDeleting(false);
+    onClose();
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl my-8">
+        <div className="flex items-start justify-between p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{message.subject}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                message.status === "unread" ? "bg-blue-100 text-blue-700" :
+                message.status === "read" ? "bg-gray-100 text-gray-700" :
+                "bg-green-100 text-green-700"}`}>
+                {message.status === "unread" ? "New" : message.status === "read" ? "Read" : "Responded"}
+              </span>
+              {message.type === "deletion_request" && (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Document Deletion Request</span>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none ml-4">×</button>
+        </div>
+        <div className="p-6">
+          <div className="mb-4">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">From</p>
+            <p className="font-medium text-gray-900">{message.pharmacyName}</p>
+            <p className="text-sm text-gray-500">{message.pharmacistName}</p>
+          </div>
+          <div className="mb-4">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Received</p>
+            <p className="text-sm text-gray-600">{new Date(message.createdAt).toLocaleString("en-GB", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+          </div>
+          <div className="pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Message</p>
+            <div className="bg-gray-50 rounded-lg p-4 text-gray-700 whitespace-pre-wrap">{message.content}</div>
+          </div>
+          {message.type === "deletion_request" && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button onClick={handleDelete} disabled={deleting} className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+                {deleting ? "… Deleting Documents…" : "🗑️ Delete All Documents for This Pharmacy"}
+              </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">This will remove all uploaded documents from the pharmacy profile</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DetailRow({
   label,

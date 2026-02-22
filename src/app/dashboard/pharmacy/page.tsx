@@ -92,12 +92,19 @@ async function fetchOrders(pharmacyId: string): Promise<Order[]> {
 export default function PharmacyDashboard() {
   const router = useRouter();
   const [user] = useState<PharmacySession | null>(getStoredUser);
-  const [activeTab, setActiveTab] = useState<"medications" | "consultations">("medications");
+  const [activeTab, setActiveTab] = useState<"medications" | "consultations" | "messages">("medications");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [showAddMedication, setShowAddMedication] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [pharmacyNotes, setPharmacyNotes] = useState("");
+  
+  // Message state
+  const [messages, setMessages] = useState<{id: string; subject: string; content: string; status: string; type: string; createdAt: string}[]>([]);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageSubject, setMessageSubject] = useState("");
+  const [messageContent, setMessageContent] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
   
   // Form state for adding medication
   const [formData, setFormData] = useState({
@@ -126,8 +133,55 @@ export default function PharmacyDashboard() {
     if (user) {
       fetchMedications(user.id).then(setMedications);
       fetchOrders(user.id).then(setOrders);
+      // Fetch messages
+      fetch(`/api/messages?pharmacyId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.messages) setMessages(data.messages);
+        })
+        .catch(console.error);
     }
   }, [user]);
+
+  async function handleSendMessage(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !messageSubject.trim() || !messageContent.trim()) return;
+    
+    setSendingMessage(true);
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pharmacyId: user.id,
+          pharmacyName: user.pharmacyName,
+          pharmacistName: user.name,
+          subject: messageSubject,
+          content: messageContent,
+          type: messageSubject.toLowerCase().includes("delete") ? "deletion_request" : "general"
+        })
+      });
+      
+      if (res.ok) {
+        alert("Message sent to admin successfully!");
+        setShowMessageModal(false);
+        setMessageSubject("");
+        setMessageContent("");
+        // Refresh messages
+        fetch(`/api/messages?pharmacyId=${user.id}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.messages) setMessages(data.messages);
+          });
+      } else {
+        alert("Failed to send message. Please try again.");
+      }
+    } catch {
+      alert("Failed to send message. Please try again.");
+    } finally {
+      setSendingMessage(false);
+    }
+  }
 
   async function handleAddMedication(e: React.FormEvent) {
     e.preventDefault();
@@ -280,6 +334,16 @@ export default function PharmacyDashboard() {
           >
             💬 Consultations ({pendingConsultations.length})
           </button>
+          <button
+            onClick={() => setActiveTab("messages")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "messages"
+                ? "bg-emerald-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            📨 Messages ({messages.length})
+          </button>
         </div>
 
         {/* Medications Tab */}
@@ -413,6 +477,61 @@ export default function PharmacyDashboard() {
                         </button>
                       )}
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Messages Tab */}
+        {activeTab === "messages" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Messages to Admin</h2>
+              <button
+                onClick={() => setShowMessageModal(true)}
+                className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+              >
+                + New Message
+              </button>
+            </div>
+
+            {messages.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div className="text-4xl mb-4">📨</div>
+                <h3 className="font-semibold text-gray-900 mb-2">No messages yet</h3>
+                <p className="text-gray-500 text-sm mb-4">Send a message to admin if you need to request document deletion or have other inquiries</p>
+                <button
+                  onClick={() => setShowMessageModal(true)}
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                >
+                  + Send First Message
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <div key={msg.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{msg.subject}</h3>
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{msg.content}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        msg.status === "unread" ? "bg-blue-100 text-blue-700" :
+                        msg.status === "read" ? "bg-gray-100 text-gray-700" :
+                        "bg-green-100 text-green-700"
+                      }`}>
+                        {msg.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {new Date(msg.createdAt).toLocaleString("en-GB", {
+                        day: "2-digit", month: "short", year: "numeric",
+                        hour: "2-digit", minute: "2-digit"
+                      })}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -661,7 +780,100 @@ export default function PharmacyDashboard() {
             </div>
           </div>
         )}
+        {/* Show Message Modal */}
+        {showMessageModal && (
+          <MessageModalComponent
+            onClose={() => setShowMessageModal(false)}
+            onSend={handleSendMessage}
+            subject={messageSubject}
+            setSubject={setMessageSubject}
+            content={messageContent}
+            setContent={setMessageContent}
+            sending={sendingMessage}
+          />
+        )}
       </main>
+    </div>
+  );
+}
+
+// Message Modal Component
+function MessageModalComponent({ 
+  onClose, 
+  onSend, 
+  subject, 
+  setSubject, 
+  content, 
+  setContent, 
+  sending 
+}: { 
+  onClose: () => void; 
+  onSend: (e: React.FormEvent) => void; 
+  subject: string; 
+  setSubject: (v: string) => void; 
+  content: string; 
+  setContent: (v: string) => void; 
+  sending: boolean; 
+}) {
+  const isDeletionRequest = subject.toLowerCase().includes("delete");
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Send Message to Admin</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+        
+        <form onSubmit={onSend} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+            <input
+              type="text"
+              required
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              placeholder="e.g. Request to delete my documents"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+            <textarea
+              required
+              rows={5}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              placeholder="Explain your request to admin..."
+            />
+          </div>
+          
+          {isDeletionRequest && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+              ℹ️ Your request to delete documents will be reviewed by admin. Once approved, your uploaded documents will be permanently removed from the system.
+            </div>
+          )}
+          
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={sending || !subject.trim() || !content.trim()}
+              className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300"
+            >
+              {sending ? "Sending..." : "Send Message"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

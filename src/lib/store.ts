@@ -9,10 +9,12 @@ import path from "path";
 import crypto from "crypto";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
+const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
 const MEDICATIONS_FILE = path.join(DATA_DIR, "medications.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
+const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -300,3 +302,99 @@ export function updateOrder(id: string, data: Partial<Order>): Order | null {
  */
 export const ADMIN_EMAIL = "admin@pharmalink.africa";
 export const ADMIN_PASSWORD_HASH = hashPassword("PharmaAdmin2024!");
+
+// ─── Messages (Pharmacy to Admin) ─────────────────────────────────────────────
+
+export interface Message {
+  id: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacistName: string;
+  subject: string;
+  content: string;
+  status: "unread" | "read" | "responded";
+  type: "deletion_request" | "general";
+  createdAt: string;
+}
+
+export function getMessages(): Message[] {
+  return readJSON<Message>(MESSAGES_FILE);
+}
+
+export function getMessageById(id: string): Message | undefined {
+  return getMessages().find((m) => m.id === id);
+}
+
+export function getMessagesByPharmacy(pharmacyId: string): Message[] {
+  return getMessages().filter((m) => m.pharmacyId === pharmacyId);
+}
+
+export function getUnreadMessagesCount(): number {
+  return getMessages().filter((m) => m.status === "unread").length;
+}
+
+export function createMessage(data: Omit<Message, "id" | "status" | "createdAt">): Message {
+  const messages = getMessages();
+  const message: Message = {
+    ...data,
+    id: crypto.randomUUID(),
+    status: "unread",
+    createdAt: new Date().toISOString(),
+  };
+  messages.push(message);
+  writeJSON(MESSAGES_FILE, messages);
+  return message;
+}
+
+export function updateMessageStatus(id: string, status: "unread" | "read" | "responded"): Message | null {
+  const messages = getMessages();
+  const idx = messages.findIndex((m) => m.id === id);
+  if (idx === -1) return null;
+  messages[idx].status = status;
+  writeJSON(MESSAGES_FILE, messages);
+  return messages[idx];
+}
+
+// Delete a document file from the filesystem
+export function deleteDocumentFile(filePath: string): boolean {
+  try {
+    // Handle both absolute and relative paths
+    const fullPath = filePath.startsWith("/") 
+      ? path.join(process.cwd(), "public", filePath)
+      : path.join(UPLOADS_DIR, filePath);
+    
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// Clear pharmacy documents (called by admin when processing deletion requests)
+export function clearPharmacyDocuments(pharmacyId: string): Pharmacy | null {
+  const pharmacies = getPharmacies();
+  const idx = pharmacies.findIndex((p) => p.id === pharmacyId);
+  if (idx === -1) return null;
+  
+  // Delete the actual files
+  if (pharmacies[idx].licenseDocument) {
+    deleteDocumentFile(pharmacies[idx].licenseDocument);
+  }
+  if (pharmacies[idx].qualificationDocument) {
+    deleteDocumentFile(pharmacies[idx].qualificationDocument);
+  }
+  if (pharmacies[idx].pharmacyRegDocument) {
+    deleteDocumentFile(pharmacies[idx].pharmacyRegDocument);
+  }
+  
+  // Clear the document paths in the database
+  pharmacies[idx].licenseDocument = "";
+  pharmacies[idx].qualificationDocument = "";
+  pharmacies[idx].pharmacyRegDocument = "";
+  
+  writeJSON(PHARMACIES_FILE, pharmacies);
+  return pharmacies[idx];
+}
