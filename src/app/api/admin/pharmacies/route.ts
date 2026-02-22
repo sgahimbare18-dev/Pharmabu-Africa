@@ -14,10 +14,27 @@ export async function GET(req: NextRequest) {
       pharmacistName: p.pharmacistName,
       email: p.email,
       phone: p.phone,
-      licenseNumber: p.licenseNumber,
+      // Pharmacist credentials
+      licenseNumber: p.licenseNumber || "",
+      pharmacistQualification: p.pharmacistQualification || "",
+      pharmacistUniversity: p.pharmacistUniversity || "",
+      pharmacistGraduationYear: p.pharmacistGraduationYear || "",
+      // Pharmacy registration
+      pharmacyRegNumber: p.pharmacyRegNumber || "",
+      pharmacyRegAuthority: p.pharmacyRegAuthority || "",
+      pharmacyRegExpiry: p.pharmacyRegExpiry || "",
+      // Location
       country: p.country,
       city: p.city,
       address: p.address,
+      // Operations
+      operatingHours: p.operatingHours || "",
+      servicesOffered: p.servicesOffered || "",
+      // File uploads
+      licenseDocument: p.licenseDocument || "",
+      qualificationDocument: p.qualificationDocument || "",
+      pharmacyRegDocument: p.pharmacyRegDocument || "",
+      // Meta
       status: p.status,
       createdAt: p.createdAt,
     }));
