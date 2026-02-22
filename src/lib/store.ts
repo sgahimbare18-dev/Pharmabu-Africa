@@ -17,8 +17,12 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.error("Failed to create data directory:", err);
   }
 }
 
@@ -26,15 +30,21 @@ function readJSON<T>(filePath: string): T[] {
   ensureDataDir();
   if (!fs.existsSync(filePath)) return [];
   try {
-    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as T[];
-  } catch {
+    const data = fs.readFileSync(filePath, "utf-8");
+    return data ? JSON.parse(data) as T[] : [];
+  } catch (err) {
+    console.error("Failed to read JSON file:", filePath, err);
     return [];
   }
 }
 
 function writeJSON<T>(filePath: string, data: T[]) {
   ensureDataDir();
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to write JSON file:", filePath, err);
+  }
 }
 
 export function hashPassword(password: string): string {
