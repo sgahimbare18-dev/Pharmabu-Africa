@@ -90,6 +90,24 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
     - GET/PUT/DELETE `/api/medications/[id]` - Manage single medication
     - GET/POST `/api/orders` - List/create orders
     - GET/PUT `/api/orders/[id]` - View/update order
+- [x] Comprehensive Admin Dashboard (MVP Phase 1 - Step 6)
+  - Added new admin API routes:
+    - GET/POST/DELETE `/api/admin/users` - Manage patients
+    - GET/PUT/DELETE `/api/admin/orders` - Manage orders
+    - GET/PUT/DELETE `/api/admin/subscriptions` - Manage subscriptions
+    - GET/PUT/DELETE `/api/admin/medications` - Manage medications
+    - DELETE `/api/admin/pharmacies/[id]` - Delete pharmacies
+  - Added new store functions: deleteUserById, deletePharmacy
+  - Completely redesigned admin dashboard with 6 tabs:
+    - **Pharmacies** - View, approve, reject, revoke, delete pharmacies
+    - **Patients** - View all patients, delete patients
+    - **Orders** - View all orders across all pharmacies, filter by status, view details, delete orders
+    - **Subscriptions** - View all subscriptions, cancel active subscriptions
+    - **Medications** - View all medications from all pharmacies, filter by category, delete medications
+    - **Messages** - Existing functionality with delete documents option
+  - Added detail modals for patients, orders, subscriptions
+  - Enhanced pharmacy modal with delete pharmacy and delete documents options
+  - Admin can now see everything patients see and manage all platform data
 
 ## Current Structure
 
