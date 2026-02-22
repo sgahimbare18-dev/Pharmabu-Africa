@@ -98,7 +98,33 @@ interface Message {
   createdAt: string;
 }
 
-type ViewType = "pharmacies" | "patients" | "orders" | "subscriptions" | "medications" | "messages" | "access_patients" | "access_pharmacies";
+interface Payment {
+  id: string;
+  orderId: string;
+  patientId: string;
+  patientName: string;
+  patientPhone: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  medicationName: string;
+  quantity: number;
+  originalAmount: number;
+  originalCurrency: string;
+  exchangeRate: number;
+  amountInKES: number;
+  platformFee: number;
+  pharmacyPayout: number;
+  adminPhone: string;
+  paymentMethod: string;
+  paymentReference: string;
+  status: "pending" | "completed" | "failed" | "refunded";
+  paymentMessage: string;
+  payoutStatus: "pending" | "sent" | "failed";
+  payoutReference: string;
+  createdAt: string;
+}
+
+type ViewType = "pharmacies" | "patients" | "orders" | "subscriptions" | "medications" | "messages" | "payments" | "access_patients" | "access_pharmacies";
 type FilterStatus = "all" | "pending" | "verified" | "rejected";
 type OrderStatus = "all" | "pending" | "consulting" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
 
@@ -111,6 +137,7 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -182,6 +209,10 @@ export default function AdminDashboardPage() {
         const res = await fetch("/api/messages", { headers });
         const data = (await res.json()) as { messages?: Message[] };
         if (res.ok && data.messages) setMessages(data.messages);
+      } else if (activeView === "payments") {
+        const res = await fetch("/api/payments", { headers });
+        const data = (await res.json()) as Payment[];
+        if (res.ok && Array.isArray(data)) setPayments(data);
       }
     } catch {
       // ignore
@@ -358,6 +389,32 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function handleSendPayout(paymentId: string) {
+    if (!confirm("Are you sure you want to send this payout to the pharmacy?")) return;
+    setActionLoading(paymentId);
+    try {
+      const payoutRef = `PAYOUT${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+      const res = await fetch("/api/payments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-admin-session": "pharmalink-admin" },
+        body: JSON.stringify({ paymentId, payoutStatus: "sent", payoutReference: payoutRef }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (res.ok) {
+        setMessage({ type: "success", text: "Payout sent successfully to pharmacy!" });
+        setPayments((prev) =>
+          prev.map((p) => (p.id === paymentId ? { ...p, payoutStatus: "sent", payoutReference: payoutRef } : p))
+        );
+      } else {
+        setMessage({ type: "error", text: data.error ?? "Failed to send payout." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error. Please try again." });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleMarkMessageRead(messageId: string) {
     try {
       const res = await fetch(`/api/messages/${messageId}`, {
@@ -429,6 +486,8 @@ export default function AdminDashboardPage() {
     subscriptions: subscriptions.length,
     medications: medications.length,
     unreadMessages: messages.filter((m) => m.status === "unread").length,
+    payments: payments.length,
+    pendingPayouts: payments.filter((p) => p.status === "completed" && p.payoutStatus === "pending").length,
   };
 
   const statusBadge = (status: Pharmacy["status"]): React.ReactNode => {
@@ -602,6 +661,9 @@ export default function AdminDashboardPage() {
           </TabButton>
           <TabButton active={activeView === "medications"} onClick={() => setActiveView("medications")} count={counts.medications}>
             💊 Medications
+          </TabButton>
+          <TabButton active={activeView === "payments"} onClick={() => setActiveView("payments")} count={counts.payments} highlight={counts.pendingPayouts > 0}>
+            💰 Payments {counts.pendingPayouts > 0 && <span className="ml-1 bg-orange-100 text-orange-700 text-xs px-1.5 py-0.5 rounded-full">{counts.pendingPayouts}</span>}
           </TabButton>
           <TabButton active={activeView === "messages"} onClick={() => setActiveView("messages")} count={counts.unreadMessages}>
             💬 Messages
@@ -909,6 +971,136 @@ export default function AdminDashboardPage() {
         {activeView === "messages" && (
           <MessagesView messages={messages} loading={loading} selectedMessage={selectedMessage} setSelectedMessage={setSelectedMessage} onMarkRead={handleMarkMessageRead} onDeleteDocs={handleDeleteDocuments} />
         )}
+
+        {/* PAYMENTS VIEW */}
+        {activeView === "payments" && (
+          <>
+            {/* Payment Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="text-2xl font-bold text-gray-900">{payments.length}</div>
+                <div className="text-sm text-gray-500">Total Payments</div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="text-2xl font-bold text-green-600">KES {payments.filter(p => p.status === "completed").reduce((sum, p) => sum + p.amountInKES, 0).toLocaleString()}</div>
+                <div className="text-sm text-gray-500">Total Revenue (KES)</div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="text-2xl font-bold text-orange-600">{payments.filter(p => p.status === "completed" && p.payoutStatus === "pending").length}</div>
+                <div className="text-sm text-gray-500">Pending Payouts</div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="text-2xl font-bold text-blue-600">KES {payments.filter(p => p.status === "completed").reduce((sum, p) => sum + p.platformFee, 0).toLocaleString()}</div>
+                <div className="text-sm text-gray-500">Platform Fees (8%)</div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {loading ? (
+                <div className="p-12 text-center text-gray-400">Loading payments…</div>
+              ) : payments.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">
+                  <div className="text-4xl mb-4">💰</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">No payments yet</h3>
+                  <p className="text-gray-500 text-sm">Patient payments will appear here</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Payment ID</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Patient</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacy</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Amount</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Platform Fee</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Payout</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {payments.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.paymentReference}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-gray-900">{p.patientName}</div>
+                            <div className="text-xs text-gray-400">{p.patientPhone}</div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{p.pharmacyName}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-gray-900">{p.originalAmount} {p.originalCurrency}</div>
+                            <div className="text-xs text-gray-400">= KES {p.amountInKES.toLocaleString()}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-blue-600">KES {p.platformFee.toLocaleString()}</div>
+                            <div className="text-xs text-gray-400">Payout: KES {p.pharmacyPayout.toLocaleString()}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {p.payoutStatus === "pending" ? (
+                              <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                                ⏳ Pending
+                              </span>
+                            ) : p.payoutStatus === "sent" ? (
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                ✅ Sent
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                ❌ Failed
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {p.status === "completed" ? (
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                ✅ Paid
+                              </span>
+                            ) : p.status === "pending" ? (
+                              <span className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                                ⏳ Pending
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                ❌ Failed
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {new Date(p.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </td>
+                          <td className="px-4 py-3">
+                            {p.status === "completed" && p.payoutStatus === "pending" && (
+                              <button 
+                                onClick={() => handleSendPayout(p.id)} 
+                                disabled={actionLoading === p.id}
+                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-medium rounded-lg transition-colors"
+                              >
+                                {actionLoading === p.id ? "…" : "💸 Send Payout"}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h3 className="font-semibold text-blue-900 mb-2">💡 How Payments Work</h3>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Patient pays in their currency (USD, EUR, BIF, etc.)</li>
+                <li>• Money is automatically converted to KES</li>
+                <li>• All payments go to admin phone: <strong>+254792965970</strong></li>
+                <li>• Platform keeps 8% as fee</li>
+                <li>• Admin sends remaining 92% to the pharmacy after order is fulfilled</li>
+              </ul>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Document Viewer Modal */}
@@ -930,12 +1122,16 @@ export default function AdminDashboardPage() {
 }
 
 // Helper Components
-function TabButton({ active, onClick, count, children }: { active: boolean; onClick: () => void; count?: number; children: React.ReactNode }) {
+function TabButton({ active, onClick, count, children, highlight }: { active: boolean; onClick: () => void; count?: number; children: React.ReactNode; highlight?: boolean }) {
   return (
     <button
       onClick={onClick}
       className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-        active ? "bg-blue-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+        active 
+          ? "bg-blue-600 text-white" 
+          : highlight 
+            ? "bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200"
+            : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
       }`}
     >
       {children}

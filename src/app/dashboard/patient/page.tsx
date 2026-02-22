@@ -780,6 +780,7 @@ export default function PatientDashboard() {
                         <div>
                           <h3 className="font-semibold text-gray-900">{order.medicationName}</h3>
                           <p className="text-sm text-gray-500">Pharmacy: {order.pharmacyName}</p>
+                          <p className="text-sm font-medium text-gray-700 mt-1">KES {order.totalPrice.toLocaleString()}</p>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           order.status === "pending" ? "bg-yellow-100 text-yellow-700" :
@@ -795,6 +796,28 @@ export default function PatientDashboard() {
                       {order.pharmacyNotes && (
                         <div className="mt-3 p-2 bg-emerald-50 border border-emerald-200 rounded">
                           <p className="text-sm"><span className="font-medium text-emerald-700">Pharmacist:</span> {order.pharmacyNotes}</p>
+                        </div>
+                      )}
+                      {/* Pay Now Button - Show if not yet paid */}
+                      {(!order.paymentMethod || order.paymentMethod === "pay_on_delivery") && order.status !== "delivered" && order.status !== "cancelled" && (
+                        <div className="mt-4 pt-3 border-t border-gray-100">
+                          <Link
+                            href={`/payment?orderId=${order.id}`}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            💳 Pay Now - KES {order.totalPrice.toLocaleString()}
+                          </Link>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Pay now and get instant confirmation. Supports M-Pesa, Airtel Money, Cards, PayPal and more.
+                          </p>
+                        </div>
+                      )}
+                      {/* Show paid status */}
+                      {order.paymentMethod && order.paymentMethod !== "pay_on_delivery" && (
+                        <div className="mt-4 pt-3 border-t border-gray-100">
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                            ✅ Payment Received
+                          </span>
                         </div>
                       )}
                     </div>

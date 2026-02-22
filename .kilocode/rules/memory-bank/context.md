@@ -127,6 +127,22 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
   - Admin can now view credential documents inline within the admin dashboard
   - Documents open in a modal with iframe for PDFs and image viewer for images
   - Click "View Details" on a pharmacy to see document links for license, qualification, and registration certificates
+- [x] Payment System with Multi-Currency Support (MVP Phase 1 - Step 11)
+  - New Payment model in store.ts with fields for currency conversion, platform fees, payouts
+  - Admin phone number (+254792965970) where all payments are received
+  - Currency conversion rates: KES, USD, EUR, GBP, BIF, UGX, TZS, RWF
+  - 8% platform fee automatically deducted from each payment
+  - Created `/api/payments` API route for processing payments and managing payouts
+  - Created `/payment` page for patients to pay for orders
+  - Supports multiple payment methods: M-Pesa, Airtel Money, Mobile Money (BI), Card, PayPal
+  - Patient receives automatic confirmation message after payment
+  - Admin dashboard now has "Payments" tab showing all payments:
+    - Total payments count
+    - Total revenue in KES
+    - Pending payouts (money to send to pharmacies)
+    - Platform fees collected
+  - Admin can send payout to pharmacy (92% of payment after 8% fee)
+  - Payout status tracking: pending → sent/failed
 
 ## Current Structure
 
@@ -165,16 +181,17 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
 | `src/app/api/medications/[id]/route.ts` | Single medication API | ✅ Ready |
 | `src/app/api/orders/route.ts` | Orders/Consultations API | ✅ Ready |
 | `src/app/api/orders/[id]/route.ts` | Single order API | ✅ Ready |
+| `src/app/payment/page.tsx` | Patient payment checkout page | ✅ Ready |
+| `src/app/api/payments/route.ts` | Payments API (process, list, payout) | ✅ Ready |
 
 ## Current Focus
 
-E-commerce marketplace is now live. Remaining MVP tasks:
+E-commerce marketplace and payment system are now live. Remaining MVP tasks:
 
 1. Prescription upload and management
 2. Delivery tracking
-3. Payment integration (M-Pesa, Mobile Money)
-4. Replace file-based store with PostgreSQL/SQLite (Drizzle or Prisma)
-5. Replace localStorage session with JWT cookies or NextAuth
+3. Replace file-based store with PostgreSQL/SQLite (Drizzle or Prisma)
+4. Replace localStorage session with JWT cookies or NextAuth
 
 ## Quick Start Guide
 
@@ -231,3 +248,4 @@ export async function GET() {
 | Initial | Template created with base setup |
 | 2026-02-22 | Added e-commerce marketplace with medication browsing, orders, and consultations |
 | 2026-02-22 | Added messaging system: admin can view documents inline (full size), pharmacists can request document deletion via messages |
+| 2026-02-22 | Added full payment system with multi-currency support (KES, USD, EUR, GBP, BIF, UGX, TZS, RWF), automatic conversion to KES, 8% platform fee, admin receives payments and sends payouts to pharmacies |

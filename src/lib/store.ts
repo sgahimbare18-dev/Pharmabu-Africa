@@ -401,6 +401,165 @@ export function cancelSubscription(id: string): Subscription | null {
  */
 export const ADMIN_EMAIL = "admin@pharmalink.africa";
 export const ADMIN_PASSWORD_HASH = hashPassword("PharmaAdmin2024!");
+export const ADMIN_PHONE = "+254792965970";
+export const PLATFORM_FEE_PERCENT = 8; // 8% platform fee
+
+// Currency exchange rates to KES (simulated - in production use a real API)
+export const EXCHANGE_RATES: Record<string, number> = {
+  KES: 1,        // Kenyan Shilling
+  USD: 157.50,   // US Dollar to KES
+  EUR: 168.75,   // Euro to KES
+  GBP: 198.50,   // British Pound to KES
+  BIF: 0.053,    // Burundian Franc to KES
+  UGX: 0.042,    // Ugandan Shilling to KES
+  TZS: 0.060,    // Tanzanian Shilling to KES
+  RWF: 0.112,    // Rwandan Franc to KES
+};
+
+export type SupportedCurrency = keyof typeof EXCHANGE_RATES;
+
+export function convertToKES(amount: number, currency: SupportedCurrency): number {
+  return amount * EXCHANGE_RATES[currency];
+}
+
+// ─── Payment ──────────────────────────────────────────────────────────────────────
+
+export type PaymentMethod = "mpesa" | "airtel_money" | "mobile_money_bi" | "card" | "paypal";
+export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  patientId: string;
+  patientName: string;
+  patientPhone: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  medicationName: string;
+  quantity: number;
+  originalAmount: number;
+  originalCurrency: SupportedCurrency;
+  exchangeRate: number;
+  amountInKES: number;
+  platformFee: number;
+  pharmacyPayout: number;
+  adminPhone: string;
+  paymentMethod: PaymentMethod;
+  paymentReference: string;
+  status: PaymentStatus;
+  paymentMessage: string; // Message sent to patient after payment
+  payoutStatus: "pending" | "sent" | "failed";
+  payoutReference: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const PAYMENTS_FILE = path.join(DATA_DIR, "payments.json");
+
+export function getPayments(): Payment[] {
+  return readJSON<Payment>(PAYMENTS_FILE);
+}
+
+export function getPaymentById(id: string): Payment | undefined {
+  return getPayments().find((p) => p.id === id);
+}
+
+export function getPaymentByOrderId(orderId: string): Payment | undefined {
+  return getPayments().find((p) => p.orderId === orderId);
+}
+
+export function getPaymentsByPatient(patientId: string): Payment[] {
+  return getPayments().filter((p) => p.patientId === patientId);
+}
+
+export function getPaymentsByPharmacy(pharmacyId: string): Payment[] {
+  return getPayments().filter((p) => p.pharmacyId === pharmacyId);
+}
+
+export function getCompletedPayments(): Payment[] {
+  return getPayments().filter((p) => p.status === "completed");
+}
+
+export function getPendingPayouts(): Payment[] {
+  return getPayments().filter((p) => p.status === "completed" && p.payoutStatus === "pending");
+}
+
+export function createPayment(data: Omit<Payment, "id" | "createdAt" | "updatedAt">): Payment {
+  const payments = getPayments();
+  const payment: Payment = {
+    ...data,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  payments.push(payment);
+  writeJSON(PAYMENTS_FILE, payments);
+  return payment;
+}
+
+export function updatePayment(id: string, data: Partial<Payment>): Payment | null {
+  const payments = getPayments();
+  const idx = payments.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  payments[idx] = {
+    ...payments[idx],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  writeJSON(PAYMENTS_FILE, payments);
+  return payments[idx];
+}
+
+export function processPayment(
+  orderId: string,
+  amount: number,
+  currency: SupportedCurrency,
+  paymentMethod: PaymentMethod,
+  patientData: { id: string; name: string; phone: string },
+  pharmacyData: { id: string; name: string },
+  medicationData: { name: string; quantity: number }
+): Payment {
+  const amountInKES = convertToKES(amount, currency);
+  const platformFee = (amountInKES * PLATFORM_FEE_PERCENT) / 100;
+  const pharmacyPayout = amountInKES - platformFee;
+  
+  const paymentReference = `PL${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  
+  return createPayment({
+    orderId,
+    patientId: patientData.id,
+    patientName: patientData.name,
+    patientPhone: patientData.phone,
+    pharmacyId: pharmacyData.id,
+    pharmacyName: pharmacyData.name,
+    medicationName: medicationData.name,
+    quantity: medicationData.quantity,
+    originalAmount: amount,
+    originalCurrency: currency,
+    exchangeRate: EXCHANGE_RATES[currency],
+    amountInKES,
+    platformFee,
+    pharmacyPayout,
+    adminPhone: ADMIN_PHONE,
+    paymentMethod,
+    paymentReference,
+    status: "completed",
+    paymentMessage: `Payment received! You paid ${amount} ${currency} (${amountInKES.toFixed(2)} KES) for ${medicationData.name}. Your medication will be prepared by ${pharmacyData.name}. Thank you for using PharmaLink Africa!`,
+    payoutStatus: "pending",
+    payoutReference: "",
+  });
+}
+
+export function updatePayoutStatus(
+  paymentId: string,
+  payoutStatus: "sent" | "failed",
+  payoutReference: string
+): Payment | null {
+  return updatePayment(paymentId, {
+    payoutStatus,
+    payoutReference,
+  });
+}
 
 // ─── Messages (Pharmacy to Admin) ─────────────────────────────────────────────
 
