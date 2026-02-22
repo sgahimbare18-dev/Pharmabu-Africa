@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel + File uploads complete
+**Project Status**: ✅ Landing page + Auth/Registration backend + Admin panel + E-commerce/Marketplace complete
 
-PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, an admin panel exists for pharmacy approval, and pharmacists can now upload physical credential documents for verification.
+PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + Telepharmacy + Delivery System for Kenya and Burundi. The landing page is complete, all CTA buttons are wired to functional registration and sign-in flows, an admin panel exists for pharmacy approval, pharmacists can upload credential documents, and now includes a full e-commerce marketplace where patients can browse medications, chat with pharmacists about symptoms, and order for pay-on-delivery.
 
 ## Recently Completed
 
@@ -67,6 +67,29 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
   - Files saved to `public/uploads/` with unique UUID filenames
   - Supports PDF, JPG, PNG, DOC, DOCX (max 10MB)
   - Admin dashboard modal now shows download links for uploaded documents
+- [x] E-commerce Marketplace (MVP Phase 1 - Step 5)
+  - Medication data model added to store.ts (name, genericName, whatItCures, dosage, price, stock, category, etc.)
+  - Order/Consultation model added to store.ts (patient-pharmacy chat, symptoms, pharmacyNotes, order status flow)
+  - Pharmacy dashboard updated with:
+    - "My Medications" tab - Add/view/delete medications with full details
+    - "Consultations" tab - View patient orders, see symptoms, respond with notes, manage order status
+    - Order status flow: pending → consulting → confirmed → preparing → ready → delivered
+  - Created `/medications` marketplace page:
+    - Browse all medications from verified pharmacies
+    - Filter by category (Pain Relief, Antibiotics, Vitamins, etc.)
+    - Search by name, condition, or category
+    - Click to view medication details and "Request This Medication"
+  - Patient dashboard updated with:
+    - Active orders section showing status and pharmacist advice
+    - Quick access to browse medications
+    - Order history table
+    - Order modal: enter symptoms, quantity, delivery address
+    - "Pay on Delivery" payment method
+  - API routes:
+    - GET/POST `/api/medications` - List/create medications
+    - GET/PUT/DELETE `/api/medications/[id]` - Manage single medication
+    - GET/POST `/api/orders` - List/create orders
+    - GET/PUT `/api/orders/[id]` - View/update order
 
 ## Current Structure
 
@@ -100,18 +123,21 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
 | `src/app/api/admin/pharmacies/route.ts` | List pharmacies API (admin) | ✅ Ready |
 | `src/app/api/admin/pharmacies/[id]/status/route.ts` | Update pharmacy status API (admin) | ✅ Ready |
 | `src/app/api/upload/route.ts` | File upload API for credential documents | ✅ Ready |
+| `src/app/medications/page.tsx` | Patient medication marketplace | ✅ Ready |
+| `src/app/api/medications/route.ts` | Medications CRUD API | ✅ Ready |
+| `src/app/api/medications/[id]/route.ts` | Single medication API | ✅ Ready |
+| `src/app/api/orders/route.ts` | Orders/Consultations API | ✅ Ready |
+| `src/app/api/orders/[id]/route.ts` | Single order API | ✅ Ready |
 
 ## Current Focus
 
-Auth, registration, and admin panel are complete. Next steps for MVP Phase 1:
+E-commerce marketplace is now live. Remaining MVP tasks:
 
 1. Prescription upload and management
-2. Chat system (WebSockets/polling)
-3. Order approval and counseling records
-4. Delivery tracking
-5. Payment integration (M-Pesa, Mobile Money)
-6. Replace file-based store with PostgreSQL/SQLite (Drizzle or Prisma)
-7. Replace localStorage session with JWT cookies or NextAuth
+2. Delivery tracking
+3. Payment integration (M-Pesa, Mobile Money)
+4. Replace file-based store with PostgreSQL/SQLite (Drizzle or Prisma)
+5. Replace localStorage session with JWT cookies or NextAuth
 
 ## Quick Start Guide
 
@@ -166,3 +192,4 @@ export async function GET() {
 | Date | Changes |
 |------|---------|
 | Initial | Template created with base setup |
+| 2026-02-22 | Added e-commerce marketplace with medication browsing, orders, and consultations |

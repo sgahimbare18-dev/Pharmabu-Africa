@@ -11,6 +11,8 @@ import crypto from "crypto";
 const DATA_DIR = path.join(process.cwd(), ".data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
+const MEDICATIONS_FILE = path.join(DATA_DIR, "medications.json");
+const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -140,6 +142,154 @@ export function updatePharmacyStatus(
   pharmacies[idx].status = status;
   writeJSON(PHARMACIES_FILE, pharmacies);
   return pharmacies[idx];
+}
+
+// ─── Medication ───────────────────────────────────────────────────────────────
+
+export interface Medication {
+  id: string;
+  pharmacyId: string;
+  name: string;
+  genericName: string;          // Generic/chemical name
+  description: string;          // What the medication does
+  whatItCures: string;         // Conditions it treats
+  dosage: string;               // e.g. "500mg tablets"
+  usageInstructions: string;   // How to take it
+  sideEffects: string;          // Common side effects
+  price: number;               // Price in KES/BIF
+  stock: number;                // Available quantity
+  category: string;             // e.g. "Pain Relief", "Antibiotics", etc.
+  imageUrl: string;            // Optional image
+  requiresPrescription: boolean;
+  status: "active" | "inactive" | "out_of_stock";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getMedications(): Medication[] {
+  return readJSON<Medication>(MEDICATIONS_FILE);
+}
+
+export function getMedicationById(id: string): Medication | undefined {
+  return getMedications().find((m) => m.id === id);
+}
+
+export function getMedicationsByPharmacy(pharmacyId: string): Medication[] {
+  return getMedications().filter((m) => m.pharmacyId === pharmacyId);
+}
+
+export function getActiveMedications(): Medication[] {
+  return getMedications().filter((m) => m.status === "active" && m.stock > 0);
+}
+
+export function createMedication(data: Omit<Medication, "id" | "createdAt" | "updatedAt" | "status">): Medication {
+  const medications = getMedications();
+  const medication: Medication = {
+    ...data,
+    id: crypto.randomUUID(),
+    status: "active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  medications.push(medication);
+  writeJSON(MEDICATIONS_FILE, medications);
+  return medication;
+}
+
+export function updateMedication(id: string, data: Partial<Medication>): Medication | null {
+  const medications = getMedications();
+  const idx = medications.findIndex((m) => m.id === id);
+  if (idx === -1) return null;
+  medications[idx] = {
+    ...medications[idx],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  writeJSON(MEDICATIONS_FILE, medications);
+  return medications[idx];
+}
+
+export function deleteMedication(id: string): boolean {
+  const medications = getMedications();
+  const filtered = medications.filter((m) => m.id !== id);
+  if (filtered.length === medications.length) return false;
+  writeJSON(MEDICATIONS_FILE, filtered);
+  return true;
+}
+
+// ─── Order/Consultation ──────────────────────────────────────────────────────
+
+export type OrderStatus = "pending" | "consulting" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
+
+export interface Order {
+  id: string;
+  patientId: string;
+  patientName: string;
+  patientPhone: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  medicationId: string;
+  medicationName: string;
+  medicationPrice: number;
+  quantity: number;
+  totalPrice: number;
+  symptoms: string;              // Patient's symptoms/consultation reason
+  pharmacyNotes: string;        // Pharmacist's notes/advice
+  status: OrderStatus;
+  paymentMethod: "pay_on_delivery";
+  deliveryAddress: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getOrders(): Order[] {
+  return readJSON<Order>(ORDERS_FILE);
+}
+
+export function getOrderById(id: string): Order | undefined {
+  return getOrders().find((o) => o.id === id);
+}
+
+export function getOrdersByPatient(patientId: string): Order[] {
+  return getOrders().filter((o) => o.patientId === patientId);
+}
+
+export function getOrdersByPharmacy(pharmacyId: string): Order[] {
+  return getOrders().filter((o) => o.pharmacyId === pharmacyId);
+}
+
+export function getPendingConsultations(pharmacyId: string): Order[] {
+  return getOrdersByPharmacy(pharmacyId).filter(
+    (o) => o.status === "pending" || o.status === "consulting"
+  );
+}
+
+export function createOrder(data: Omit<Order, "id" | "createdAt" | "updatedAt" | "status" | "pharmacyNotes">): Order {
+  const orders = getOrders();
+  const order: Order = {
+    ...data,
+    id: crypto.randomUUID(),
+    status: "pending",
+    pharmacyNotes: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  orders.push(order);
+  writeJSON(ORDERS_FILE, orders);
+  return order;
+}
+
+export function updateOrder(id: string, data: Partial<Order>): Order | null {
+  const orders = getOrders();
+  const idx = orders.findIndex((o) => o.id === id);
+  if (idx === -1) return null;
+  orders[idx] = {
+    ...orders[idx],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  writeJSON(ORDERS_FILE, orders);
+  return orders[idx];
 }
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
