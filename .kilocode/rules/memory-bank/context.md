@@ -108,6 +108,25 @@ PharmaLink Africa is a secure, legally compliant Digital Pharmacy Marketplace + 
   - Added detail modals for patients, orders, subscriptions
   - Enhanced pharmacy modal with delete pharmacy and delete documents options
   - Admin can now see everything patients see and manage all platform data
+- [x] Family Pharmacist with Payment (MVP Phase 1 - Step 7)
+  - Added payment fields to FamilyPharmacist model: monthlyFee, paymentStatus, paymentMethod, paymentDate, nextPaymentDate
+  - Patients can now hire family pharmacist with monthly fee (default KES 500)
+  - Shows payment status: Pending Payment, Paid, Overdue
+  - "Pay Now" button for activation
+  - Created `/api/family-pharmacist/route.ts` API
+- [x] Family Doctor Services (MVP Phase 1 - Step 8)
+  - New FamilyDoctorService model - pharmacies can offer family doctor services with monthly pricing
+  - New API route: `/api/family-doctor-service` (GET, POST, PUT, DELETE)
+  - Patients can browse and hire family doctor services
+- [x] Profile Update Approval (MVP Phase 1 - Step 9)
+  - New ProfileUpdateRequest model for pending admin approval
+  - New API route: `/api/profile-update-request` (GET, POST, PUT)
+  - Patient profile changes now require admin approval before being applied
+  - Admin can approve/reject profile update requests
+- [x] Admin Dashboard Inline Document Viewer (MVP Phase 1 - Step 10)
+  - Admin can now view credential documents inline within the admin dashboard
+  - Documents open in a modal with iframe for PDFs and image viewer for images
+  - Click "View Details" on a pharmacy to see document links for license, qualification, and registration certificates
 
 ## Current Structure
 
