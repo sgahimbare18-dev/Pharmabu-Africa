@@ -62,6 +62,18 @@ export function getUserByEmail(email: string): User | undefined {
   return getUsers().find((u) => u.email.toLowerCase() === email.toLowerCase());
 }
 
+export function getUserById(id: string): User | undefined {
+  return getUsers().find((u) => u.id === id);
+}
+
+export function deleteUserById(id: string): boolean {
+  const users = getUsers();
+  const filtered = users.filter((u) => u.id !== id);
+  if (filtered.length === users.length) return false;
+  writeJSON(USERS_FILE, filtered);
+  return true;
+}
+
 export function createUser(data: Omit<User, "id" | "createdAt">): User {
   const users = getUsers();
   const user: User = {
@@ -144,6 +156,14 @@ export function updatePharmacyStatus(
   pharmacies[idx].status = status;
   writeJSON(PHARMACIES_FILE, pharmacies);
   return pharmacies[idx];
+}
+
+export function deletePharmacy(id: string): boolean {
+  const pharmacies = getPharmacies();
+  const filtered = pharmacies.filter((p) => p.id !== id);
+  if (filtered.length === pharmacies.length) return false;
+  writeJSON(PHARMACIES_FILE, filtered);
+  return true;
 }
 
 // ─── Medication ───────────────────────────────────────────────────────────────
@@ -292,6 +312,14 @@ export function updateOrder(id: string, data: Partial<Order>): Order | null {
   };
   writeJSON(ORDERS_FILE, orders);
   return orders[idx];
+}
+
+export function deleteOrder(id: string): boolean {
+  const orders = getOrders();
+  const filtered = orders.filter((o) => o.id !== id);
+  if (filtered.length === orders.length) return false;
+  writeJSON(ORDERS_FILE, filtered);
+  return true;
 }
 
 // ─── Pharmacy Subscription (Monthly Payments) ─────────────────────────────────
