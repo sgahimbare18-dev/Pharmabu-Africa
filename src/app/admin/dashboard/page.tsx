@@ -990,11 +990,20 @@ function PharmacyTable({ pharmacies, loading, actionLoading, onView, onStatusCha
                   <td className="px-4 py-3 text-gray-600">{p.city}, <span className="capitalize">{p.country}</span></td>
                   <td className="px-4 py-3">
                     {(p.licenseDocument || p.qualificationDocument || p.pharmacyRegDocument) ? (
-                      <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ {[
-                        p.licenseDocument ? 1 : 0,
-                        p.qualificationDocument ? 1 : 0,
-                        p.pharmacyRegDocument ? 1 : 0
-                      ].reduce((a, b) => a + b, 0)}</span>
+                      <>
+                        <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ {[
+                          p.licenseDocument ? 1 : 0,
+                          p.qualificationDocument ? 1 : 0,
+                          p.pharmacyRegDocument ? 1 : 0
+                        ].reduce((a, b) => a + b, 0)}</span>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onView(p); }} 
+                          className="ml-2 px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium rounded-lg"
+                          title="View Documents"
+                        >
+                          📄
+                        </button>
+                      </>
                     ) : (
                       <span className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">✗ None</span>
                     )}
@@ -1144,18 +1153,58 @@ function PharmacyModal({ pharmacy, onClose, onDeleteDocs, onStatusChange, onDele
           <section><h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">📋 Contact</h3><div className="grid grid-cols-2 gap-3"><div><span className="text-xs text-gray-500">Email</span><p className="text-gray-900">{pharmacy.email}</p></div><div><span className="text-xs text-gray-500">Phone</span><p className="text-gray-900">{pharmacy.phone}</p></div><div><span className="text-xs text-gray-500">City</span><p className="text-gray-900">{pharmacy.city}</p></div><div><span className="text-xs text-gray-500">Country</span><p className="text-gray-900 capitalize">{pharmacy.country}</p></div></div></section>
           <section><h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">🎓 Pharmacist</h3><div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2"><p><span className="text-xs text-gray-500">Name</span><span className="ml-2 font-medium">{pharmacy.pharmacistName}</span></p><p><span className="text-xs text-gray-500">License</span><span className="ml-2 font-mono text-xs">{pharmacy.licenseNumber}</span></p><p><span className="text-xs text-gray-500">Qualification</span><span className="ml-2">{pharmacy.pharmacistQualification}</span></p></div></section>
           <section><h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">🏥 Registration</h3><div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-2"><p><span className="text-xs text-gray-500">Reg Number</span><span className="ml-2 font-mono text-xs">{pharmacy.pharmacyRegNumber}</span></p><p><span className="text-xs text-gray-500">Authority</span><span className="ml-2">{pharmacy.pharmacyRegAuthority}</span></p></div></section>
-          {/* Documents Section - Always show this section */}
-          <section><h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">📄 Documents</h3>
+          {/* Documents Section - Always show this section with prominent display */}
+          <section className="bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
+              <span className="text-lg">📄</span> Credential Documents
+            </h3>
             {(pharmacy.licenseDocument || pharmacy.qualificationDocument || pharmacy.pharmacyRegDocument) ? (
-              <div className="grid gap-2">
-                {pharmacy.licenseDocument && <button onClick={() => setSelectedDocument(pharmacy.licenseDocument)} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-colors text-left"><span className="text-blue-600">📜</span><div><p className="text-sm font-medium text-gray-900">Pharmacist License</p><p className="text-xs text-gray-500 truncate">{pharmacy.licenseDocument}</p></div></button>}
-                {pharmacy.qualificationDocument && <button onClick={() => setSelectedDocument(pharmacy.qualificationDocument)} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-colors text-left"><span className="text-blue-600">🎓</span><div><p className="text-sm font-medium text-gray-900">Qualification Certificate</p><p className="text-xs text-gray-500 truncate">{pharmacy.qualificationDocument}</p></div></button>}
-                {pharmacy.pharmacyRegDocument && <button onClick={() => setSelectedDocument(pharmacy.pharmacyRegDocument)} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-colors text-left"><span className="text-blue-600">🏥</span><div><p className="text-sm font-medium text-gray-900">Pharmacy Registration</p><p className="text-xs text-gray-500 truncate">{pharmacy.pharmacyRegDocument}</p></div></button>}
+              <div className="grid gap-3">
+                {pharmacy.licenseDocument && (
+                  <button 
+                    onClick={() => setSelectedDocument(pharmacy.licenseDocument)} 
+                    className="flex items-center gap-3 p-3 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-all text-left shadow-sm hover:shadow-md"
+                  >
+                    <span className="text-2xl">📜</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">Pharmacist License Document</p>
+                      <p className="text-xs text-gray-500 font-mono">{pharmacy.licenseDocument}</p>
+                    </div>
+                    <span className="text-blue-600 text-sm font-medium">Click to View →</span>
+                  </button>
+                )}
+                {pharmacy.qualificationDocument && (
+                  <button 
+                    onClick={() => setSelectedDocument(pharmacy.qualificationDocument)} 
+                    className="flex items-center gap-3 p-3 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-all text-left shadow-sm hover:shadow-md"
+                  >
+                    <span className="text-2xl">🎓</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">Qualification Certificate</p>
+                      <p className="text-xs text-gray-500 font-mono">{pharmacy.qualificationDocument}</p>
+                    </div>
+                    <span className="text-blue-600 text-sm font-medium">Click to View →</span>
+                  </button>
+                )}
+                {pharmacy.pharmacyRegDocument && (
+                  <button 
+                    onClick={() => setSelectedDocument(pharmacy.pharmacyRegDocument)} 
+                    className="flex items-center gap-3 p-3 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-all text-left shadow-sm hover:shadow-md"
+                  >
+                    <span className="text-2xl">🏥</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">Pharmacy Registration Certificate</p>
+                      <p className="text-xs text-gray-500 font-mono">{pharmacy.pharmacyRegDocument}</p>
+                    </div>
+                    <span className="text-blue-600 text-sm font-medium">Click to View →</span>
+                  </button>
+                )}
               </div>
             ) : (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
-                <p className="text-yellow-700 text-sm">⚠️ No documents uploaded</p>
-                <p className="text-yellow-600 text-xs mt-1">This pharmacy did not upload credential documents during registration.</p>
+              <div className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-xl text-center">
+                <div className="text-4xl mb-2">⚠️</div>
+                <p className="text-yellow-800 font-semibold text-sm">No documents uploaded</p>
+                <p className="text-yellow-600 text-xs mt-1">This pharmacy did not upload credential documents during registration. You may want to reject or request documents before approving.</p>
               </div>
             )}
           </section>
