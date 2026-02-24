@@ -1,53 +1,8 @@
-const complianceItems = [
-  {
-    icon: "🚫",
-    title: "Prescriptions Cannot Be Deleted",
-    description:
-      "Once uploaded, prescriptions are permanently stored. No patient, pharmacist, or admin can delete them — only status changes are permitted.",
-    status: "Critical",
-    statusColor: "red",
-  },
-  {
-    icon: "📝",
-    title: "Mandatory Counseling Before Dispensing",
-    description:
-      "The system blocks dispensing until the pharmacist completes the structured counseling form with digital signature.",
-    status: "Enforced",
-    statusColor: "amber",
-  },
-  {
-    icon: "🔍",
-    title: "Controlled Drug Monitoring",
-    description:
-      "Controlled substances require valid prescriptions, extra pharmacist confirmation, and are flagged for admin visibility. Antibiotics require prescription review.",
-    status: "Monitored",
-    statusColor: "blue",
-  },
-  {
-    icon: "📊",
-    title: "Immutable Audit Logs",
-    description:
-      "Every action is recorded with user ID, IP address, device info, and timestamp. Audit logs cannot be edited or deleted by anyone.",
-    status: "Always On",
-    statusColor: "emerald",
-  },
-  {
-    icon: "🏛️",
-    title: "Regulatory Alignment",
-    description:
-      "Aligned with Kenya's Pharmacy and Poisons Board and Burundi's Ministère de la Santé Publique. Pharmacist verification follows national standards.",
-    status: "Compliant",
-    statusColor: "purple",
-  },
-  {
-    icon: "🔐",
-    title: "Data Retention Policy",
-    description:
-      "All prescription records, counseling notes, and audit logs are retained for a minimum of 5–10 years as required by healthcare regulations.",
-    status: "5–10 Years",
-    statusColor: "teal",
-  },
-];
+"use client";
+
+import { useLanguage } from "@/lib/i18n";
+
+const icons = ["🚫", "📝", "🔍", "📊", "🏛️", "🔐"];
 
 const statusColors: Record<string, string> = {
   red: "bg-red-100 text-red-700 border-red-200",
@@ -58,22 +13,25 @@ const statusColors: Record<string, string> = {
   teal: "bg-teal-100 text-teal-700 border-teal-200",
 };
 
+const statusColorKeys = ["red", "amber", "blue", "emerald", "purple", "teal"];
+
 export default function Compliance() {
+  const { t } = useLanguage();
+
   return (
-    <section id="compliance" className="py-24 bg-white">
+    <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-4 py-1.5 mb-4">
             <span className="w-2 h-2 bg-red-500 rounded-full" />
-            <span className="text-red-600 text-sm font-medium">Legal Compliance</span>
+            <span className="text-red-600 text-sm font-medium">{t.compliance.badge}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            This Is Not a Normal E-Commerce App
+            {t.compliance.title}
           </h2>
           <p className="text-gray-500 text-lg max-w-3xl mx-auto">
-            PharmabuLink Africa is a regulated medical system, a legal evidence storage system, and a healthcare compliance tool.{" "}
-            <strong className="text-gray-700">Security and audit trail are more important than UI design.</strong>
+            {t.compliance.subtitle}
           </p>
         </div>
 
@@ -85,20 +43,20 @@ export default function Compliance() {
             </svg>
           </div>
           <div>
-            <h3 className="font-bold text-red-800 mb-1">Failure in Compliance = Legal Shutdown</h3>
+            <h3 className="font-bold text-red-800 mb-1">{t.compliance.warningTitle}</h3>
             <p className="text-red-700 text-sm leading-relaxed">
-              All compliance features are non-negotiable and enforced at the system level. No user — including administrators — can bypass these controls. Every violation attempt is logged and flagged.
+              {t.compliance.warningDesc}
             </p>
           </div>
         </div>
 
         {/* Compliance grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {complianceItems.map((item) => (
+          {t.compliance.items.map((item: any, index: number) => (
             <div key={item.title} className="border border-gray-200 rounded-2xl p-6 hover:border-gray-300 hover:shadow-md transition-all">
               <div className="flex items-start justify-between mb-4">
-                <span className="text-3xl">{item.icon}</span>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${statusColors[item.statusColor]}`}>
+                <span className="text-3xl">{icons[index]}</span>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${statusColors[statusColorKeys[index]]}`}>
                   {item.status}
                 </span>
               </div>
@@ -110,14 +68,14 @@ export default function Compliance() {
 
         {/* Prescription status flow */}
         <div className="mt-16 bg-gray-50 rounded-2xl p-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">Prescription Status Flow</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">{t.compliance.flowTitle}</h3>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {[
-              { label: "Pending", color: "bg-gray-200 text-gray-700" },
+              { label: t.compliance.flowLabels.pending, color: "bg-gray-200 text-gray-700" },
               { label: "→", color: "text-gray-400 bg-transparent" },
-              { label: "Approved", color: "bg-blue-100 text-blue-700" },
+              { label: t.compliance.flowLabels.approved, color: "bg-blue-100 text-blue-700" },
               { label: "→", color: "text-gray-400 bg-transparent" },
-              { label: "Dispensed", color: "bg-emerald-100 text-emerald-700" },
+              { label: t.compliance.flowLabels.dispensed, color: "bg-emerald-100 text-emerald-700" },
             ].map((item, i) => (
               <span
                 key={i}
@@ -128,9 +86,9 @@ export default function Compliance() {
             ))}
             <div className="w-full flex flex-wrap items-center justify-center gap-3 mt-2">
               {[
-                { label: "Rejected", color: "bg-red-100 text-red-700" },
-                { label: "Expired", color: "bg-orange-100 text-orange-700" },
-                { label: "Flagged", color: "bg-yellow-100 text-yellow-700" },
+                { label: t.compliance.flowLabels.rejected, color: "bg-red-100 text-red-700" },
+                { label: t.compliance.flowLabels.expired, color: "bg-orange-100 text-orange-700" },
+                { label: t.compliance.flowLabels.flagged, color: "bg-yellow-100 text-yellow-700" },
               ].map((item) => (
                 <span key={item.label} className={`px-4 py-2 rounded-full text-sm font-medium ${item.color}`}>
                   {item.label}
@@ -139,7 +97,7 @@ export default function Compliance() {
             </div>
           </div>
           <p className="text-center text-gray-500 text-sm mt-4">
-            All status changes are timestamped, logged, and permanently stored. No prescription can ever be deleted.
+            {t.compliance.flowNote}
           </p>
         </div>
       </div>

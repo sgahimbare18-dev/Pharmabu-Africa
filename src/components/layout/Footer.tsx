@@ -1,4 +1,10 @@
+"use client";
+
+import { useLanguage } from "@/lib/i18n";
+
 export default function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-gray-950 text-gray-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -14,32 +20,26 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm leading-relaxed mb-4">
-              Africa&apos;s trusted digital pharmacy marketplace. Secure, compliant, and patient-first.
+              {t.footer.description}
             </p>
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-emerald-500">🇰🇪</span>
-                <span>Kenya — Pharmacy & Poisons Board</span>
+                <span>{t.footer.kenya}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-emerald-500">🇧🇮</span>
-                <span>Burundi — Ministère de la Santé</span>
+                <span>{t.footer.burundi}</span>
               </div>
             </div>
           </div>
 
           {/* Platform */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-4">Platform</h4>
+            <h4 className="text-white font-semibold text-sm mb-4">{t.footer.platform}</h4>
             <ul className="space-y-2 text-sm">
-              {[
-                "Find a Pharmacy",
-                "Upload Prescription",
-                "Track Delivery",
-                "Family Pharmacist",
-                "Telepharmacy",
-              ].map((item) => (
-                <li key={item}>
+              {t.footer.platformLinks.map((item: string, index: number) => (
+                <li key={index}>
                   <a href="#" className="hover:text-emerald-400 transition-colors">
                     {item}
                   </a>
@@ -50,16 +50,10 @@ export default function Footer() {
 
           {/* For Pharmacists */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-4">For Pharmacists</h4>
+            <h4 className="text-white font-semibold text-sm mb-4">{t.footer.forPharmacists}</h4>
             <ul className="space-y-2 text-sm">
-              {[
-                "Register Your Pharmacy",
-                "Verification Process",
-                "Inventory Management",
-                "Counseling Records",
-                "Delivery Management",
-              ].map((item) => (
-                <li key={item}>
+              {t.footer.forPharmacistsLinks.map((item: string, index: number) => (
+                <li key={index}>
                   <a href="#" className="hover:text-emerald-400 transition-colors">
                     {item}
                   </a>
@@ -70,16 +64,10 @@ export default function Footer() {
 
           {/* Legal & Compliance */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-4">Legal & Compliance</h4>
+            <h4 className="text-white font-semibold text-sm mb-4">{t.footer.legal}</h4>
             <ul className="space-y-2 text-sm">
-              {[
-                "Privacy Policy",
-                "Terms of Service",
-                "Data Retention Policy",
-                "Audit Trail Policy",
-                "Regulatory Compliance",
-              ].map((item) => (
-                <li key={item}>
+              {t.footer.legalLinks.map((item: string, index: number) => (
+                <li key={index}>
                   <a href="#" className="hover:text-emerald-400 transition-colors">
                     {item}
                   </a>
@@ -92,18 +80,12 @@ export default function Footer() {
         {/* Compliance badges */}
         <div className="border-t border-gray-800 pt-8 mb-8">
           <div className="flex flex-wrap gap-4 justify-center">
-            {[
-              { icon: "🔒", text: "256-bit Encryption" },
-              { icon: "📋", text: "HIPAA-Aligned" },
-              { icon: "🏛️", text: "PPB Compliant (Kenya)" },
-              { icon: "⚖️", text: "MoH Compliant (Burundi)" },
-              { icon: "🛡️", text: "Immutable Audit Logs" },
-            ].map((badge) => (
+            {t.footer.badges.map((badge: any, index: number) => (
               <div
-                key={badge.text}
+                key={index}
                 className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-full px-3 py-1.5 text-xs"
               >
-                <span>{badge.icon}</span>
+                <span>{badge.text.includes("256") ? "🔒" : badge.text.includes("HIPAA") ? "📋" : badge.text.includes("PPB") ? "🏛️" : badge.text.includes("MoH") ? "⚖️" : "🛡️"}</span>
                 <span className="text-gray-400">{badge.text}</span>
               </div>
             ))}
@@ -112,15 +94,15 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <p>© 2026 PharmabuLink Africa. All rights reserved.</p>
+          <p>{t.footer.copyright}</p>
           <p className="text-gray-600">
-            This platform is a regulated medical system. All actions are logged and legally binding.
+            {t.footer.disclaimer}
           </p>
           <a
             href="/admin/login"
             className="text-gray-700 hover:text-gray-500 transition-colors"
           >
-            Admin
+            {t.footer.admin}
           </a>
         </div>
       </div>
