@@ -43,11 +43,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("pharmalink-language", lang);
   };
 
-  // Don't render until mounted to avoid hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always provide context - default to English during SSG until mounted on client
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t: translations[language] }}>
       {children}
@@ -57,8 +53,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
+  // Return default English translations during SSG or when not wrapped in provider
   if (!context) {
-    throw new Error("useLanguage must be used within a LanguageProvider");
+    return {
+      language: "en" as Language,
+      setLanguage: () => {},
+      t: en
+    };
   }
   return context;
 }
