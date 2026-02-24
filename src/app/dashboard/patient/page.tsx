@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/i18n";
 
 interface UserSession {
   id: string;
@@ -146,6 +147,7 @@ function getStoredUser(): UserSession | null {
 
 export default function PatientDashboard() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [user] = useState<UserSession | null>(getStoredUser);
   const [activeTab, setActiveTab] = useState<"home" | "find-pharmacy" | "prescriptions" | "delivery" | "family-pharmacist" | "telepharmacy" | "profile">("home");
   
@@ -588,7 +590,7 @@ export default function PatientDashboard() {
   if (!user) {
     return (
       <div className="min-h-screen bg-emerald-950 flex items-center justify-center">
-        <div className="text-emerald-400 text-sm">Loading…</div>
+        <div className="text-emerald-400 text-sm">{t.patientDashboard.loading}</div>
       </div>
     );
   }
@@ -620,7 +622,7 @@ export default function PatientDashboard() {
               onClick={handleSignOut}
               className="text-sm text-gray-500 hover:text-red-600 transition-colors"
             >
-              Sign Out
+              {t.patientDashboard.signOut}
             </button>
           </div>
         </div>
@@ -631,11 +633,11 @@ export default function PatientDashboard() {
         <div className="bg-amber-50 border-b border-amber-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2 text-amber-800 text-sm">
-              <span className="font-medium">👁️ Admin View:</span>
-              <span>You are viewing this patient board as <strong>{user.adminName}</strong></span>
+              <span className="font-medium">{t.patientDashboard.adminView}</span>
+              <span>{t.patientDashboard.adminViewAs} <strong>{user.adminName}</strong></span>
             </div>
             <Link href="/admin/dashboard" className="text-sm text-amber-700 hover:text-amber-900 font-medium">
-              ← Return to Admin Dashboard
+              {t.patientDashboard.returnToAdmin}
             </Link>
           </div>
         </div>
@@ -651,7 +653,7 @@ export default function PatientDashboard() {
               activeTab === "home" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            🏠 Home
+            🏠 {t.patientDashboard.tabHome}
           </button>
           <button
             onClick={() => setActiveTab("find-pharmacy")}
@@ -659,7 +661,7 @@ export default function PatientDashboard() {
               activeTab === "find-pharmacy" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            🔍 Find Pharmacy
+            🔍 {t.patientDashboard.tabFindPharmacy}
           </button>
           <button
             onClick={() => setActiveTab("prescriptions")}
@@ -667,7 +669,7 @@ export default function PatientDashboard() {
               activeTab === "prescriptions" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            📄 Prescriptions ({prescriptions.length})
+            📄 {t.patientDashboard.tabPrescriptions} ({prescriptions.length})
           </button>
           <button
             onClick={() => setActiveTab("delivery")}
@@ -675,7 +677,7 @@ export default function PatientDashboard() {
               activeTab === "delivery" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            🚚 Track Delivery ({activeOrders.length})
+            🚚 {t.patientDashboard.tabDelivery} ({activeOrders.length})
           </button>
           <button
             onClick={() => setActiveTab("family-pharmacist")}
@@ -683,7 +685,7 @@ export default function PatientDashboard() {
               activeTab === "family-pharmacist" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            👨‍⚕️ Family Pharmacist
+            👨‍⚕️ {t.patientDashboard.tabFamilyPharmacist}
           </button>
           <button
             onClick={() => setActiveTab("telepharmacy")}
@@ -691,7 +693,7 @@ export default function PatientDashboard() {
               activeTab === "telepharmacy" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            📹 Telepharmacy
+            📹 {t.patientDashboard.tabTelepharmacy}
           </button>
         </div>
 
@@ -700,9 +702,9 @@ export default function PatientDashboard() {
           <div>
             {/* Welcome banner */}
             <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white mb-8">
-              <h1 className="text-2xl font-bold mb-1">Hello, {user.name}! 👋</h1>
+              <h1 className="text-2xl font-bold mb-1">{t.patientDashboard.welcome}, {user.name}! 👋</h1>
               <p className="text-emerald-100/80">
-                Your health is our priority. Find a pharmacy, upload prescriptions, or consult with a pharmacist.
+                {t.patientDashboard.welcome.includes("Welcome") ? "Your health is our priority. Find a pharmacy, upload prescriptions, or consult with a pharmacist." : "Votre santé est notre priorité. Trouvez une pharmacie, téléchargez des ordonnances ou consultez un pharmacien."}
               </p>
             </div>
 
