@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLanguage, Language } from "@/lib/i18n";
 
 export default function Navbar() {
+  const { t, language, setLanguage } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+
+  const toggleLanguage = () => {
+    setLanguage(language === "en" ? "fr" : "en");
+    setLangMenuOpen(false);
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
@@ -23,32 +31,58 @@ export default function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-gray-600 hover:text-emerald-600 text-sm font-medium transition-colors">
-              Features
+              {t.nav.features}
             </a>
             <a href="#how-it-works" className="text-gray-600 hover:text-emerald-600 text-sm font-medium transition-colors">
-              How It Works
+              {t.nav.howItWorks}
             </a>
             <a href="#compliance" className="text-gray-600 hover:text-emerald-600 text-sm font-medium transition-colors">
-              Compliance
+              {t.nav.compliance}
             </a>
             <a href="#for-pharmacies" className="text-gray-600 hover:text-emerald-600 text-sm font-medium transition-colors">
-              For Pharmacies
+              {t.nav.forPharmacies}
             </a>
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons + Language Switcher */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Language Switcher */}
+            <div className="relative">
+              <button
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-emerald-600 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                <span>{language === "en" ? "EN" : "FR"}</span>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {langMenuOpen && (
+                <div className="absolute right-0 mt-1 w-28 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                  <button
+                    onClick={toggleLanguage}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-emerald-600"
+                  >
+                    {language === "en" ? "Français" : "English"}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <Link
               href="/signin"
               className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors px-3 py-2"
             >
-              Sign In
+              {t.nav.signIn}
             </Link>
             <Link
               href="/register"
               className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
-              Get Started
+              {t.nav.getStarted}
             </Link>
           </div>
 
@@ -74,17 +108,28 @@ export default function Navbar() {
         {menuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col gap-3">
+              {/* Mobile Language Switcher */}
+              <button
+                onClick={() => setLanguage(language === "en" ? "fr" : "en")}
+                className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 text-sm font-medium py-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                {language === "en" ? "Français" : "English"}
+              </button>
+              
               <a href="#features" className="text-gray-600 hover:text-emerald-600 text-sm font-medium py-2" onClick={() => setMenuOpen(false)}>
-                Features
+                {t.nav.features}
               </a>
               <a href="#how-it-works" className="text-gray-600 hover:text-emerald-600 text-sm font-medium py-2" onClick={() => setMenuOpen(false)}>
-                How It Works
+                {t.nav.howItWorks}
               </a>
               <a href="#compliance" className="text-gray-600 hover:text-emerald-600 text-sm font-medium py-2" onClick={() => setMenuOpen(false)}>
-                Compliance
+                {t.nav.compliance}
               </a>
               <a href="#for-pharmacies" className="text-gray-600 hover:text-emerald-600 text-sm font-medium py-2" onClick={() => setMenuOpen(false)}>
-                For Pharmacies
+                {t.nav.forPharmacies}
               </a>
               <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
                 <Link
@@ -92,14 +137,14 @@ export default function Navbar() {
                   className="text-sm font-medium text-gray-700 py-2"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Sign In
+                  {t.nav.signIn}
                 </Link>
                 <Link
                   href="/register"
                   className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg text-center"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Get Started
+                  {t.nav.getStarted}
                 </Link>
               </div>
             </div>

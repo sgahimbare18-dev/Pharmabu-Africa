@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Hero() {
+  const { t } = useLanguage();
+  
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 flex items-center overflow-hidden">
       {/* Background pattern */}
@@ -28,28 +33,24 @@ export default function Hero() {
             <div className="inline-flex items-center gap-2 bg-emerald-800/50 border border-emerald-600/30 rounded-full px-4 py-1.5 mb-6">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
               <span className="text-emerald-300 text-sm font-medium">
-                Regulated · Compliant · Secure
+                {t.hero.title === "Your Health, Our Priority" ? "Regulated · Compliant · Secure" : "Réglementé · Conforme · Sécurisé"}
               </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Africa&apos;s Trusted{" "}
-              <span className="text-emerald-400">Digital Pharmacy</span>{" "}
-              Platform
+              {t.hero.title}
             </h1>
 
             <p className="text-emerald-100/80 text-lg sm:text-xl leading-relaxed mb-8 max-w-xl">
-              Connecting patients with verified pharmacies across Kenya and
-              Burundi. Secure prescription management, telepharmacy
-              consultations, and doorstep delivery — all legally compliant.
+              {t.hero.subtitle}
             </p>
 
-            {/* Stats */}
+            {/* Stats - these stay in English as they're technical */}
             <div className="flex flex-wrap gap-6 mb-10">
               {[
-                { value: "100%", label: "Verified Pharmacists" },
-                { value: "5–10yr", label: "Prescription Retention" },
-                { value: "24/7", label: "Audit Trail" },
+                { value: "100%", label: t.hero.title === "Your Health, Our Priority" ? "Verified Pharmacists" : "Pharmaciens Vérifiés" },
+                { value: "5–10yr", label: t.hero.title === "Your Health, Our Priority" ? "Prescription Retention" : "Conservation Ordonnances" },
+                { value: "24/7", label: t.hero.title === "Your Health, Our Priority" ? "Audit Trail" : "Piste d'Audit" },
               ].map((stat) => (
                 <div key={stat.label}>
                   <div className="text-2xl font-bold text-emerald-400">
@@ -66,13 +67,13 @@ export default function Hero() {
                 href="/register"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50 hover:shadow-emerald-500/30 hover:-translate-y-0.5"
               >
-                Find a Pharmacy
+                {t.hero.cta1}
               </Link>
               <Link
                 href="/register/pharmacy"
                 className="border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-semibold px-8 py-3.5 rounded-xl transition-all hover:bg-emerald-800/30"
               >
-                Register Your Pharmacy
+                {t.hero.title === "Your Health, Our Priority" ? "Register Your Pharmacy" : "Enregistrer Votre Pharmacy"}
               </Link>
             </div>
 
@@ -105,12 +106,16 @@ export default function Hero() {
                     </svg>
                   </div>
                   <div>
-                    <div className="text-white font-semibold text-sm">Prescription Uploaded</div>
-                    <div className="text-emerald-300/70 text-xs">Securely stored · Cannot be deleted</div>
+                    <div className="text-white font-semibold text-sm">
+                      {t.hero.title === "Your Health, Our Priority" ? "Prescription Uploaded" : "Ordonnance Téléchargée"}
+                    </div>
+                    <div className="text-emerald-300/70 text-xs">
+                      {t.hero.title === "Your Health, Our Priority" ? "Securely stored · Cannot be deleted" : "Stocké en toute sécurité · Ne peut être supprimé"}
+                    </div>
                   </div>
                   <div className="ml-auto">
                     <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-1 rounded-full border border-emerald-500/30">
-                      Pending Review
+                      {t.hero.title === "Your Health, Our Priority" ? "Pending Review" : "En Attente de Vérification"}
                     </span>
                   </div>
                 </div>
@@ -134,7 +139,7 @@ export default function Hero() {
                     <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
-                    Encrypted · Audit logged · Immutable record
+                    {t.hero.title === "Your Health, Our Priority" ? "Encrypted · Audit logged · Immutable record" : "Chiffré · Journalisé · Enregistrement immuable"}
                   </div>
                 </div>
               </div>
@@ -147,16 +152,22 @@ export default function Hero() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                   </div>
-                  <span className="text-gray-800 text-xs font-semibold">Counseling Required</span>
+                  <span className="text-gray-800 text-xs font-semibold">
+                    {t.hero.title === "Your Health, Our Priority" ? "Counseling Required" : "Conseil Requis"}
+                  </span>
                 </div>
-                <p className="text-gray-500 text-xs">Pharmacist must complete counseling form before dispensing</p>
+                <p className="text-gray-500 text-xs">
+                  {t.hero.title === "Your Health, Our Priority" ? "Pharmacist must complete counseling form before dispensing" : "Le pharmacien doit compléter le formulaire de conseil avant la délivrance"}
+                </p>
               </div>
 
               {/* Floating delivery card */}
               <div className="absolute -top-6 -right-6 bg-white rounded-xl p-4 shadow-xl border border-gray-100 w-52">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg">🚚</span>
-                  <span className="text-gray-800 text-xs font-semibold">Out for Delivery</span>
+                  <span className="text-gray-800 text-xs font-semibold">
+                    {t.hero.title === "Your Health, Our Priority" ? "Out for Delivery" : "En Cours de Livraison"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="flex-1 bg-gray-100 rounded-full h-1.5">
@@ -164,7 +175,9 @@ export default function Hero() {
                   </div>
                   <span className="text-gray-500 text-xs">75%</span>
                 </div>
-                <p className="text-gray-400 text-xs mt-1">OTP confirmation on delivery</p>
+                <p className="text-gray-400 text-xs mt-1">
+                  {t.hero.title === "Your Health, Our Priority" ? "OTP confirmation on delivery" : "Confirmation OTP à la livraison"}
+                </p>
               </div>
             </div>
           </div>

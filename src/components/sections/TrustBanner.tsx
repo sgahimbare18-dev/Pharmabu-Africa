@@ -1,13 +1,17 @@
-const trustItems = [
-  { icon: "🔒", text: "End-to-End Encrypted" },
-  { icon: "📋", text: "Full Audit Trail" },
-  { icon: "🏛️", text: "Regulatory Compliant" },
-  { icon: "💊", text: "Verified Pharmacists Only" },
-  { icon: "🛡️", text: "Immutable Prescription Records" },
-  { icon: "⚖️", text: "Legal Evidence Storage" },
-];
+"use client";
+
+import { useLanguage } from "@/lib/i18n";
 
 export default function TrustBanner() {
+  const { t } = useLanguage();
+  
+  const trustItems = [
+    { icon: "🔒", text: t.trustBanner.verified },
+    { icon: "📋", text: t.trustBanner.secure },
+    { icon: "🏛️", text: t.trustBanner.compliant },
+    { icon: "💊", text: t.trustBanner.support },
+  ];
+
   return (
     <section className="bg-gray-50 border-y border-gray-200 py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
