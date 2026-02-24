@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function RegisterPharmacyPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [form, setForm] = useState({
     // Basic info
@@ -62,7 +64,7 @@ export default function RegisterPharmacyPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to upload file");
+        setError(data.error || t.pharmacyRegister.uploadError);
         return;
       }
 
@@ -71,7 +73,7 @@ export default function RegisterPharmacyPage() {
         [fieldName]: { url: data.url, filename: data.filename },
       }));
     } catch {
-      setError("Failed to upload file. Please try again.");
+      setError(t.pharmacyRegister.uploadError);
     } finally {
       setUploading((prev) => ({ ...prev, [fieldName]: false }));
     }
@@ -83,11 +85,11 @@ export default function RegisterPharmacyPage() {
     setSuccess("");
 
     if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t.pharmacyRegister.passwordsDoNotMatch);
       return;
     }
     if (form.password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t.pharmacyRegister.passwordTooShort);
       return;
     }
 
@@ -122,13 +124,13 @@ export default function RegisterPharmacyPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Registration failed.");
+        setError(data.error || t.pharmacyRegister.registrationFailed);
       } else {
-        setSuccess(data.message);
+        setSuccess(data.message || t.pharmacyRegister.registrationSuccess);
         setTimeout(() => router.push("/signin"), 5000);
       }
     } catch {
-      setError("Network error. Please try again.");
+      setError(t.pharmacyRegister.networkError);
     } finally {
       setLoading(false);
     }
@@ -153,11 +155,11 @@ export default function RegisterPharmacyPage() {
               PharmaBu <span className="text-emerald-400">Africa</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-bold text-white mt-6 mb-1">Register Your Pharmacy</h1>
+          <h1 className="text-2xl font-bold text-white mt-6 mb-1">{t.pharmacyRegister.title}</h1>
           <p className="text-emerald-300/70 text-sm">
-            Already registered?{" "}
+            {t.pharmacyRegister.alreadyRegistered}{" "}
             <Link href="/signin" className="text-emerald-400 hover:text-emerald-300 font-medium">
-              Sign in
+              {t.pharmacyRegister.signIn}
             </Link>
           </p>
         </div>
@@ -166,9 +168,7 @@ export default function RegisterPharmacyPage() {
         <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl px-4 py-3 mb-6 flex gap-3">
           <span className="text-amber-400 text-lg flex-shrink-0">⚠️</span>
           <p className="text-amber-200/80 text-sm leading-relaxed">
-            Your pharmacy will be manually verified by our team before activation. Please ensure all
-            details match your official registration documents. Our admin will review your credentials
-            and registration certificates.
+            {t.pharmacyRegister.verificationNotice}
           </p>
         </div>
 
@@ -179,30 +179,30 @@ export default function RegisterPharmacyPage() {
             {/* ── Section 1: Basic Information ── */}
             <div className={sectionHeadingClass}>
               <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">1</span>
-              Basic Information
+              {t.pharmacyRegister.basicInfo}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>Pharmacy Name *</label>
+                <label className={labelClass}>{t.pharmacyRegister.pharmacyName} *</label>
                 <input
                   type="text"
                   name="pharmacyName"
                   value={form.pharmacyName}
                   onChange={handleChange}
-                  placeholder="MedPlus Pharmacy"
+                  placeholder={t.pharmacyRegister.pharmacyNamePlaceholder}
                   required
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>Lead Pharmacist Full Name *</label>
+                <label className={labelClass}>{t.pharmacyRegister.leadPharmacistName} *</label>
                 <input
                   type="text"
                   name="pharmacistName"
                   value={form.pharmacistName}
                   onChange={handleChange}
-                  placeholder="Dr. John Mwangi"
+                  placeholder={t.pharmacyRegister.leadPharmacistNamePlaceholder}
                   required
                   className={inputClass}
                 />
@@ -211,25 +211,25 @@ export default function RegisterPharmacyPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>Email Address *</label>
+                <label className={labelClass}>{t.pharmacyRegister.emailAddress} *</label>
                 <input
                   type="email"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="pharmacy@example.com"
+                  placeholder={t.pharmacyRegister.emailAddressPlaceholder}
                   required
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>Phone Number *</label>
+                <label className={labelClass}>{t.pharmacyRegister.phoneNumber} *</label>
                 <input
                   type="tel"
                   name="phone"
                   value={form.phone}
                   onChange={handleChange}
-                  placeholder="+254 700 000 000"
+                  placeholder={t.pharmacyRegister.phoneNumberPlaceholder}
                   required
                   className={inputClass}
                 />
@@ -239,40 +239,40 @@ export default function RegisterPharmacyPage() {
             {/* ── Section 2: Pharmacist Credentials ── */}
             <div className={sectionHeadingClass}>
               <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">2</span>
-              Pharmacist Professional Credentials
+              {t.pharmacyRegister.pharmacistCredentials}
             </div>
 
             <div>
-              <label className={labelClass}>Pharmacist License / Registration Number *</label>
+              <label className={labelClass}>{t.pharmacyRegister.licenseNumber} *</label>
               <input
                 type="text"
                 name="licenseNumber"
                 value={form.licenseNumber}
                 onChange={handleChange}
-                placeholder="PPB/2024/XXXXX (Kenya) or ARCOS/XXXX (Burundi)"
+                placeholder={t.pharmacyRegister.licenseNumberPlaceholder}
                 required
                 className={inputClass}
               />
               <p className="text-emerald-300/50 text-xs mt-1">
-                Your official license number issued by the Pharmacy & Poisons Board (Kenya) or ARCOS (Burundi).
+                {t.pharmacyRegister.licenseNumberHelp}
               </p>
             </div>
 
             <div>
-              <label className={labelClass}>Highest Pharmacist Qualification *</label>
+              <label className={labelClass}>{t.pharmacyRegister.qualification} *</label>
               <input
                 type="text"
                 name="pharmacistQualification"
                 value={form.pharmacistQualification}
                 onChange={handleChange}
-                placeholder="e.g. Bachelor of Pharmacy (B.Pharm), Doctor of Pharmacy (Pharm.D)"
+                placeholder={t.pharmacyRegister.qualificationPlaceholder}
                 required
                 className={inputClass}
               />
             </div>
 
             <div>
-              <label className={labelClass}>Upload Pharmacist License Document *</label>
+              <label className={labelClass}>{t.pharmacyRegister.uploadLicense} *</label>
               <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:border-emerald-400/50 transition">
                 <input
                   type="file"
@@ -284,40 +284,40 @@ export default function RegisterPharmacyPage() {
                 />
                 <label htmlFor="licenseDocument" className="cursor-pointer">
                   {uploading.licenseDocument ? (
-                    <span className="text-emerald-300">Uploading...</span>
+                    <span className="text-emerald-300">{t.pharmacyRegister.uploading}</span>
                   ) : uploadedFiles.licenseDocument ? (
                     <span className="text-emerald-400">✅ {uploadedFiles.licenseDocument.filename}</span>
                   ) : (
                     <span className="text-emerald-300/70">
-                      📎 Click to upload license document (PDF, JPG, PNG, DOC)
+                      {t.pharmacyRegister.uploadPrompt}
                     </span>
                   )}
                 </label>
               </div>
-              <p className="text-emerald-300/50 text-xs mt-1">Upload a clear copy of your pharmacist license/registration certificate.</p>
+              <p className="text-emerald-300/50 text-xs mt-1">{t.pharmacyRegister.uploadLicenseHelp}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>University / Institution *</label>
+                <label className={labelClass}>{t.pharmacyRegister.university} *</label>
                 <input
                   type="text"
                   name="pharmacistUniversity"
                   value={form.pharmacistUniversity}
                   onChange={handleChange}
-                  placeholder="University of Nairobi"
+                  placeholder={t.pharmacyRegister.universityPlaceholder}
                   required
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>Year of Graduation *</label>
+                <label className={labelClass}>{t.pharmacyRegister.graduationYear} *</label>
                 <input
                   type="text"
                   name="pharmacistGraduationYear"
                   value={form.pharmacistGraduationYear}
                   onChange={handleChange}
-                  placeholder="e.g. 2018"
+                  placeholder={t.pharmacyRegister.graduationYearPlaceholder}
                   required
                   pattern="\d{4}"
                   maxLength={4}
@@ -329,27 +329,27 @@ export default function RegisterPharmacyPage() {
             {/* ── Section 3: Pharmacy Registration ── */}
             <div className={sectionHeadingClass}>
               <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">3</span>
-              Pharmacy Business Registration
+              {t.pharmacyRegister.pharmacyRegistration}
             </div>
 
             <div>
-              <label className={labelClass}>Pharmacy Registration Number *</label>
+              <label className={labelClass}>{t.pharmacyRegister.pharmacyRegNumber} *</label>
               <input
                 type="text"
                 name="pharmacyRegNumber"
                 value={form.pharmacyRegNumber}
                 onChange={handleChange}
-                placeholder="e.g. PPB/PHARM/2024/XXXXX"
+                placeholder={t.pharmacyRegister.pharmacyRegNumberPlaceholder}
                 required
                 className={inputClass}
               />
               <p className="text-emerald-300/50 text-xs mt-1">
-                The official registration number of your pharmacy premises as issued by the regulatory authority.
+                {t.pharmacyRegister.pharmacyRegNumberHelp}
               </p>
             </div>
 
             <div>
-              <label className={labelClass}>Upload Qualification Certificate *</label>
+              <label className={labelClass}>{t.pharmacyRegister.uploadQualification} *</label>
               <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:border-emerald-400/50 transition">
                 <input
                   type="file"
@@ -361,7 +361,7 @@ export default function RegisterPharmacyPage() {
                 />
                 <label htmlFor="qualificationDocument" className="cursor-pointer">
                   {uploading.qualificationDocument ? (
-                    <span className="text-emerald-300">Uploading...</span>
+                    <span className="text-emerald-300">{t.pharmacyRegister.uploading}</span>
                   ) : uploadedFiles.qualificationDocument ? (
                     <span className="text-emerald-400">✅ {uploadedFiles.qualificationDocument.filename}</span>
                   ) : (
@@ -371,11 +371,11 @@ export default function RegisterPharmacyPage() {
                   )}
                 </label>
               </div>
-              <p className="text-emerald-300/50 text-xs mt-1">Upload your highest pharmacy qualification certificate (degree, diploma).</p>
+              <p className="text-emerald-300/50 text-xs mt-1">{t.pharmacyRegister.uploadQualificationHelp}</p>
             </div>
 
             <div>
-              <label className={labelClass}>Upload Pharmacy Registration Certificate *</label>
+              <label className={labelClass}>{t.pharmacyRegister.uploadPharmacyReg} *</label>
               <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:border-emerald-400/50 transition">
                 <input
                   type="file"
@@ -387,7 +387,7 @@ export default function RegisterPharmacyPage() {
                 />
                 <label htmlFor="pharmacyRegDocument" className="cursor-pointer">
                   {uploading.pharmacyRegDocument ? (
-                    <span className="text-emerald-300">Uploading...</span>
+                    <span className="text-emerald-300">{t.pharmacyRegister.uploading}</span>
                   ) : uploadedFiles.pharmacyRegDocument ? (
                     <span className="text-emerald-400">✅ {uploadedFiles.pharmacyRegDocument.filename}</span>
                   ) : (
@@ -397,24 +397,24 @@ export default function RegisterPharmacyPage() {
                   )}
                 </label>
               </div>
-              <p className="text-emerald-300/50 text-xs mt-1">Upload the pharmacy premises registration/operating license certificate.</p>
+              <p className="text-emerald-300/50 text-xs mt-1">{t.pharmacyRegister.uploadPharmacyRegHelp}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>Issuing Regulatory Authority *</label>
+                <label className={labelClass}>{t.pharmacyRegister.regulatoryAuthority} *</label>
                 <input
                   type="text"
                   name="pharmacyRegAuthority"
                   value={form.pharmacyRegAuthority}
                   onChange={handleChange}
-                  placeholder="Kenya Pharmacy & Poisons Board"
+                  placeholder={t.pharmacyRegister.regulatoryAuthorityPlaceholder}
                   required
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>Registration Expiry Date *</label>
+                <label className={labelClass}>{t.pharmacyRegister.expiryDate} *</label>
                 <input
                   type="date"
                   name="pharmacyRegExpiry"
@@ -429,11 +429,11 @@ export default function RegisterPharmacyPage() {
             {/* ── Section 4: Location ── */}
             <div className={sectionHeadingClass}>
               <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">4</span>
-              Location
+              {t.pharmacyRegister.location}
             </div>
 
             <div>
-              <label className={labelClass}>Country *</label>
+              <label className={labelClass}>{t.pharmacyRegister.country} *</label>
               <select
                 name="country"
                 value={form.country}
@@ -448,25 +448,25 @@ export default function RegisterPharmacyPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>City *</label>
+                <label className={labelClass}>{t.pharmacyRegister.city} *</label>
                 <input
                   type="text"
                   name="city"
                   value={form.city}
                   onChange={handleChange}
-                  placeholder="Nairobi"
+                  placeholder={t.pharmacyRegister.cityPlaceholder}
                   required
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>Physical Address *</label>
+                <label className={labelClass}>{t.pharmacyRegister.address} *</label>
                 <input
                   type="text"
                   name="address"
                   value={form.address}
                   onChange={handleChange}
-                  placeholder="123 Kenyatta Avenue, Westlands"
+                  placeholder={t.pharmacyRegister.addressPlaceholder}
                   required
                   className={inputClass}
                 />
@@ -476,29 +476,29 @@ export default function RegisterPharmacyPage() {
             {/* ── Section 5: Operations ── */}
             <div className={sectionHeadingClass}>
               <span className="w-5 h-5 bg-emerald-500/30 rounded-full flex items-center justify-center text-emerald-300 text-xs">5</span>
-              Operations (Optional)
+              {t.pharmacyRegister.operations}
             </div>
 
             <div>
-              <label className={labelClass}>Operating Hours</label>
+              <label className={labelClass}>{t.pharmacyRegister.operatingHours}</label>
               <input
                 type="text"
                 name="operatingHours"
                 value={form.operatingHours}
                 onChange={handleChange}
-                placeholder="Mon–Fri 8am–8pm, Sat 9am–5pm, Sun Closed"
+                placeholder={t.pharmacyRegister.operatingHoursPlaceholder}
                 className={inputClass}
               />
             </div>
 
             <div>
-              <label className={labelClass}>Services Offered</label>
+              <label className={labelClass}>{t.pharmacyRegister.servicesOffered}</label>
               <input
                 type="text"
                 name="servicesOffered"
                 value={form.servicesOffered}
                 onChange={handleChange}
-                placeholder="Dispensing, Telepharmacy, Home Delivery, Prescription Counseling"
+                placeholder={t.pharmacyRegister.servicesOfferedPlaceholder}
                 className={inputClass}
               />
             </div>
@@ -511,26 +511,26 @@ export default function RegisterPharmacyPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>Password *</label>
+                <label className={labelClass}>{t.pharmacyRegister.password} *</label>
                 <input
                   type="password"
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Min. 8 characters"
+                  placeholder={t.pharmacyRegister.passwordPlaceholder}
                   required
                   minLength={8}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>Confirm Password *</label>
+                <label className={labelClass}>{t.pharmacyRegister.confirmPassword} *</label>
                 <input
                   type="password"
                   name="confirmPassword"
                   value={form.confirmPassword}
                   onChange={handleChange}
-                  placeholder="Repeat your password"
+                  placeholder={t.pharmacyRegister.confirmPasswordPlaceholder}
                   required
                   className={inputClass}
                 />
@@ -555,19 +555,19 @@ export default function RegisterPharmacyPage() {
               disabled={loading}
               className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-700 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50"
             >
-              {loading ? "Submitting registration…" : "Submit Pharmacy Registration"}
+              {loading ? t.pharmacyRegister.registering : t.pharmacyRegister.registerButton}
             </button>
           </form>
 
           {/* Patient link */}
           <div className="mt-6 pt-6 border-t border-white/10 text-center">
             <p className="text-emerald-300/60 text-sm">
-              Looking for medicines as a patient?{" "}
+              {t.patientRegister.areYouPharmacist}{" "}
               <Link
                 href="/register"
                 className="text-emerald-400 hover:text-emerald-300 font-medium"
               >
-                Create a patient account →
+                {t.patientRegister.registerPharmacyLink}
               </Link>
             </p>
           </div>
@@ -576,7 +576,7 @@ export default function RegisterPharmacyPage() {
         {/* Back to home */}
         <div className="text-center mt-6">
           <Link href="/" className="text-emerald-400/60 hover:text-emerald-400 text-sm transition-colors">
-            ← Back to home
+            ← {t.signIn.backToHome}
           </Link>
         </div>
       </div>

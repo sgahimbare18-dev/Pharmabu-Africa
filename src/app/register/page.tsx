@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function RegisterPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [form, setForm] = useState({
     name: "",
@@ -29,11 +31,11 @@ export default function RegisterPage() {
     setSuccess("");
 
     if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t.patientRegister.passwordsDoNotMatch);
       return;
     }
     if (form.password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t.patientRegister.passwordTooShort);
       return;
     }
 
@@ -52,13 +54,13 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Registration failed.");
+        setError(data.error || t.patientRegister.registrationFailed);
       } else {
-        setSuccess("Account created! Redirecting to sign in…");
+        setSuccess(t.patientRegister.accountCreated);
         setTimeout(() => router.push("/signin"), 2000);
       }
     } catch {
-      setError("Network error. Please try again.");
+      setError(t.patientRegister.networkError);
     } finally {
       setLoading(false);
     }
@@ -77,11 +79,11 @@ export default function RegisterPage() {
               PharmaBu <span className="text-emerald-400">Africa</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-bold text-white mt-6 mb-1">Create your account</h1>
+          <h1 className="text-2xl font-bold text-white mt-6 mb-1">{t.patientRegister.title}</h1>
           <p className="text-emerald-300/70 text-sm">
-            Already have an account?{" "}
+            {t.patientRegister.alreadyHaveAccount}{" "}
             <Link href="/signin" className="text-emerald-400 hover:text-emerald-300 font-medium">
-              Sign in
+              {t.patientRegister.signIn}
             </Link>
           </p>
         </div>
@@ -92,14 +94,14 @@ export default function RegisterPage() {
             {/* Full Name */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Full Name
+                {t.patientRegister.fullNameLabel}
               </label>
               <input
                 type="text"
                 name="name"
                 value={form.name}
                 onChange={handleChange}
-                placeholder="Jane Kamau"
+                placeholder={t.patientRegister.fullNamePlaceholder}
                 required
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
               />
@@ -108,14 +110,14 @@ export default function RegisterPage() {
             {/* Email */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Email Address
+                {t.patientRegister.emailLabel}
               </label>
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="jane@example.com"
+                placeholder={t.patientRegister.emailPlaceholder}
                 required
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
               />
@@ -124,14 +126,14 @@ export default function RegisterPage() {
             {/* Phone */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Phone Number
+                {t.patientRegister.phoneLabel}
               </label>
               <input
                 type="tel"
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
-                placeholder="+254 700 000 000"
+                placeholder={t.patientRegister.phonePlaceholder}
                 required
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
               />
@@ -140,7 +142,7 @@ export default function RegisterPage() {
             {/* Country */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Country
+                {t.patientRegister.countryLabel}
               </label>
               <select
                 name="country"
@@ -149,22 +151,22 @@ export default function RegisterPage() {
                 required
                 className="w-full bg-emerald-900 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
               >
-                <option value="kenya">🇰🇪 Kenya</option>
-                <option value="burundi">🇧🇮 Burundi</option>
+                <option value="kenya">🇰🇪 {t.patientRegister.kenya}</option>
+                <option value="burundi">🇧🇮 {t.patientRegister.burundi}</option>
               </select>
             </div>
 
             {/* Password */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Password
+                {t.patientRegister.passwordLabel}
               </label>
               <input
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="Min. 8 characters"
+                placeholder={t.patientRegister.passwordPlaceholder}
                 required
                 minLength={8}
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
@@ -174,14 +176,14 @@ export default function RegisterPage() {
             {/* Confirm Password */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Confirm Password
+                {t.patientRegister.confirmPasswordLabel}
               </label>
               <input
                 type="password"
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                placeholder="Repeat your password"
+                placeholder={t.patientRegister.confirmPasswordPlaceholder}
                 required
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
               />
@@ -205,19 +207,19 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-700 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50"
             >
-              {loading ? "Creating account…" : "Create Account"}
+              {loading ? t.patientRegister.creatingAccount : t.patientRegister.createAccountButton}
             </button>
           </form>
 
           {/* Pharmacy link */}
           <div className="mt-6 pt-6 border-t border-white/10 text-center">
             <p className="text-emerald-300/60 text-sm">
-              Are you a pharmacist?{" "}
+              {t.patientRegister.areYouPharmacist}{" "}
               <Link
                 href="/register/pharmacy"
                 className="text-emerald-400 hover:text-emerald-300 font-medium"
               >
-                Register your pharmacy →
+                {t.patientRegister.registerPharmacyLink}
               </Link>
             </p>
           </div>
@@ -226,7 +228,7 @@ export default function RegisterPage() {
         {/* Back to home */}
         <div className="text-center mt-6">
           <Link href="/" className="text-emerald-400/60 hover:text-emerald-400 text-sm transition-colors">
-            ← Back to home
+            ← {t.signIn.backToHome}
           </Link>
         </div>
       </div>

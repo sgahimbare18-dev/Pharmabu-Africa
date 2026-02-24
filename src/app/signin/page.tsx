@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function SignInPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,7 @@ export default function SignInPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Sign in failed.");
+        setError(data.error || t.signIn.signInFailed);
       } else {
         // Store user info in localStorage (simple session)
         localStorage.setItem("pharmalink_user", JSON.stringify(data.user));
@@ -41,7 +43,7 @@ export default function SignInPage() {
         }
       }
     } catch {
-      setError("Network error. Please try again.");
+      setError(t.signIn.networkError);
     } finally {
       setLoading(false);
     }
@@ -60,11 +62,11 @@ export default function SignInPage() {
               PharmaBu <span className="text-emerald-400">Africa</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-bold text-white mt-6 mb-1">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-white mt-6 mb-1">{t.signIn.title}</h1>
           <p className="text-emerald-300/70 text-sm">
-            Don&apos;t have an account?{" "}
+            {t.signIn.dontHaveAccount}{" "}
             <Link href="/register" className="text-emerald-400 hover:text-emerald-300 font-medium">
-              Create one
+              {t.signIn.createOne}
             </Link>
           </p>
         </div>
@@ -75,14 +77,14 @@ export default function SignInPage() {
             {/* Email */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Email Address
+                {t.signIn.emailLabel}
               </label>
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="you@example.com"
+                placeholder={t.signIn.emailPlaceholder}
                 required
                 autoComplete="email"
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
@@ -92,14 +94,14 @@ export default function SignInPage() {
             {/* Password */}
             <div>
               <label className="block text-emerald-200 text-sm font-medium mb-1.5">
-                Password
+                {t.signIn.passwordLabel}
               </label>
               <input
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="Your password"
+                placeholder={t.signIn.passwordPlaceholder}
                 required
                 autoComplete="current-password"
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/40 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
@@ -119,25 +121,25 @@ export default function SignInPage() {
               disabled={loading}
               className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-700 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-900/50"
             >
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? t.signIn.signingIn : t.signIn.signInButton}
             </button>
           </form>
 
           {/* Register links */}
           <div className="mt-6 pt-6 border-t border-white/10 space-y-3 text-center">
             <p className="text-emerald-300/60 text-sm">
-              New patient?{" "}
+              {t.signIn.newPatient}{" "}
               <Link href="/register" className="text-emerald-400 hover:text-emerald-300 font-medium">
-                Create a patient account
+                {t.signIn.createPatientAccount}
               </Link>
             </p>
             <p className="text-emerald-300/60 text-sm">
-              Pharmacy owner?{" "}
+              {t.signIn.pharmacyOwner}{" "}
               <Link
                 href="/register/pharmacy"
                 className="text-emerald-400 hover:text-emerald-300 font-medium"
               >
-                Register your pharmacy
+                {t.signIn.registerPharmacy}
               </Link>
             </p>
           </div>
@@ -146,7 +148,7 @@ export default function SignInPage() {
         {/* Back to home */}
         <div className="text-center mt-6">
           <Link href="/" className="text-emerald-400/60 hover:text-emerald-400 text-sm transition-colors">
-            ← Back to home
+            ← {t.signIn.backToHome}
           </Link>
         </div>
       </div>
