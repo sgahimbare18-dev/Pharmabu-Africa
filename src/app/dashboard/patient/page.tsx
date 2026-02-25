@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
+import { DrugSafetyChecker } from "@/components/DrugSafetyChecker";
 
 interface UserSession {
   id: string;
@@ -149,7 +150,7 @@ export default function PatientDashboard() {
   const router = useRouter();
   const { t } = useLanguage();
   const [user] = useState<UserSession | null>(getStoredUser);
-  const [activeTab, setActiveTab] = useState<"home" | "find-pharmacy" | "prescriptions" | "delivery" | "family-pharmacist" | "telepharmacy" | "profile">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "find-pharmacy" | "prescriptions" | "delivery" | "family-pharmacist" | "telepharmacy" | "drug-safety" | "profile">("home");
   
   // Data states
   const [profile, setProfile] = useState<PatientProfile | null>(null);
@@ -694,6 +695,14 @@ export default function PatientDashboard() {
             }`}
           >
             📹 {t.patientDashboard.tabTelepharmacy}
+          </button>
+          <button
+            onClick={() => setActiveTab("drug-safety")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "drug-safety" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            💊 {t.patientDashboard.tabDrugSafety}
           </button>
         </div>
 
@@ -1272,6 +1281,11 @@ export default function PatientDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* DRUG SAFETY TAB */}
+        {activeTab === "drug-safety" && (
+          <DrugSafetyChecker user={user} />
         )}
 
         {/* PROFILE TAB */}

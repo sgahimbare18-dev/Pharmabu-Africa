@@ -357,7 +357,20 @@ export const fr = {
     tabDelivery: "Livraison",
     tabFamilyPharmacist: "Pharmacien Familial",
     tabTelepharmacy: "Télésanté",
+    tabDrugSafety: "Sécurité Médicamenteuse",
     tabProfile: "Profil",
+    
+    // Drug Safety
+    drugSafetyTitle: "Vérificateur d'Interactions Médicamenteuses",
+    drugSafetySubtitle: "Vérifiez si vos médicaments peuvent être pris ensemble",
+    drugSafetyAddDrug: "Ajouter un médicament",
+    drugSafetyPlaceholder: "Entrez le nom du médicament (ex: ibuprofène, warfarine)",
+    drugSafetyCheck: "Vérifier les Interactions",
+    drugSafetyClear: "Tout Effacer",
+    drugSafetyResultSafe: "✅ Sûr - Aucune interaction trouvée",
+    drugSafetyResultDanger: "⚠️ Attention - Interactions dangereuses détectées!",
+    drugSafetyResultModerate: "⚠️ Attention - Interactions modérées trouvées",
+    drugSafetyAddToCart: "Ajouter à la Commande",
     // Home Section
     yourMedications: "Vos Médicaments",
     activeOrders: "Commandes Actives",
