@@ -145,13 +145,20 @@ PharmabuLink Africa is a secure, legally compliant Digital Pharmacy Marketplace 
   - Payout status tracking: pending → sent/failed
 - [x] Database Integration (MVP Phase 1 - Step 12)
   - Added Drizzle ORM with SQLite for persistent data storage
-  - Created 14 database tables: users, pharmacies, medications, orders, subscriptions, payments, messages, patient_profiles, pharmacy_staff, prescriptions, patient_records, family_pharmacists, family_doctor_services, profile_update_requests
+  - Created 14 database tables
   - Database client at `src/db/index.ts`
   - Migration script at `src/db/migrate.ts`
   - Schema at `src/db/schema.ts`
   - drizzle.config.ts for migration management
   - Package scripts: db:generate, db:migrate
   - Replaces file-based JSON storage with persistent database
+- [x] Drug Interaction Checker (Feature #1)
+  - Created drug interactions database with 30+ common interactions
+  - Added API route `/api/drug-interactions`
+  - Created DrugSafetyChecker component with UI
+  - Added Drug Safety tab to patient dashboard
+  - Supports contraindicated, major, moderate, minor severity levels
+  - Bilingual translations (EN/FR)
 
 ## Current Structure
 
