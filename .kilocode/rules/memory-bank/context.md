@@ -265,3 +265,7 @@ export async function GET() {
 | 2026-02-22 | Added e-commerce marketplace with medication browsing, orders, and consultations |
 | 2026-02-22 | Added messaging system: admin can view documents inline (full size), pharmacists can request document deletion via messages |
 | 2026-02-22 | Added full payment system with multi-currency support (KES, USD, EUR, GBP, BIF, UGX, TZS, RWF), automatic conversion to KES, 8% platform fee, admin receives payments and sends payouts to pharmacies |
+| 2026-06-28 | Fixed admin dashboard JSX structure errors (duplicate MESSAGES VIEW, missing closing braces) |
+| 2026-06-28 | Added Prescription interface and prescriptions state to admin dashboard |
+| 2026-06-28 | Added prescriptions tab button and prescriptions view with table/list in admin dashboard |
+| 2026-06-28 | Added handleDeletePrescription function and PrescriptionModal component to admin dashboard |

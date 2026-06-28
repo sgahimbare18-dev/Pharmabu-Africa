@@ -124,7 +124,26 @@ interface Payment {
   createdAt: string;
 }
 
-type ViewType = "pharmacies" | "patients" | "orders" | "subscriptions" | "medications" | "messages" | "payments" | "access_patients" | "access_pharmacies";
+interface Prescription {
+  id: string;
+  patientId: string;
+  patientName: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  medicationName: string;
+  dosage: string;
+  quantity: number;
+  instructions: string;
+  prescriberName: string;
+  prescriberLicense: string;
+  documentUrl: string;
+  status: "pending" | "verified" | "rejected" | "filled";
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type ViewType = "pharmacies" | "patients" | "orders" | "subscriptions" | "medications" | "prescriptions" | "messages" | "payments" | "access_patients" | "access_pharmacies";
 type FilterStatus = "all" | "pending" | "verified" | "rejected";
 type OrderStatus = "all" | "pending" | "consulting" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
 
@@ -138,7 +157,8 @@ export default function AdminDashboardPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -150,7 +170,8 @@ export default function AdminDashboardPage() {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
-  
+  const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
+
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [orderFilter, setOrderFilter] = useState<OrderStatus>("all");
   const [medCategoryFilter, setMedCategoryFilter] = useState<string>("all");
@@ -209,6 +230,10 @@ export default function AdminDashboardPage() {
         const res = await fetch("/api/messages", { headers });
         const data = (await res.json()) as { messages?: Message[] };
         if (res.ok && data.messages) setMessages(data.messages);
+      } else if (activeView === "prescriptions") {
+        const res = await fetch("/api/prescriptions", { headers });
+        const data = (await res.json()) as Prescription[];
+        if (res.ok && Array.isArray(data)) setPrescriptions(data);
       } else if (activeView === "payments") {
         const res = await fetch("/api/payments", { headers });
         const data = (await res.json()) as Payment[];
@@ -353,6 +378,25 @@ export default function AdminDashboardPage() {
       } else {
         const data = (await res.json()) as { error?: string };
         setMessage({ type: "error", text: data.error ?? "Failed to delete medication." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error. Please try again." });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDeletePrescription(id: string) {
+    if (!confirm("Are you sure you want to delete this prescription?")) return;
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/prescriptions?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setMessage({ type: "success", text: "Prescription deleted successfully." });
+        setPrescriptions((prev) => prev.filter((p) => p.id !== id));
+      } else {
+        const data = (await res.json()) as { error?: string };
+        setMessage({ type: "error", text: data.error ?? "Failed to delete prescription." });
       }
     } catch {
       setMessage({ type: "error", text: "Network error. Please try again." });
@@ -658,6 +702,9 @@ export default function AdminDashboardPage() {
           </TabButton>
           <TabButton active={activeView === "subscriptions"} onClick={() => setActiveView("subscriptions")} count={counts.subscriptions}>
             🔄 Subscriptions
+          </TabButton>
+          <TabButton active={activeView === "prescriptions"} onClick={() => setActiveView("prescriptions")} count={prescriptions.length}>
+            📄 Prescriptions
           </TabButton>
           <TabButton active={activeView === "medications"} onClick={() => setActiveView("medications")} count={counts.medications}>
             💊 Medications
@@ -967,6 +1014,65 @@ export default function AdminDashboardPage() {
           </>
         )}
 
+        {/* PRESCRIPTIONS VIEW */}
+        {activeView === "prescriptions" && (
+          <>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {loading ? (
+                <div className="p-12 text-center text-gray-400">Loading prescriptions...</div>
+              ) : prescriptions.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">
+                  <div className="text-4xl mb-4">📄</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">No prescriptions yet</h3>
+                  <p className="text-gray-500 text-sm">Patient prescriptions will appear here</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Patient</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Pharmacy</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Medication</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Dosage</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {prescriptions.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-900">{p.patientName}</td>
+                          <td className="px-4 py-3 text-gray-600">{p.pharmacyName || "Pending assignment"}</td>
+                          <td className="px-4 py-3 text-gray-600">{p.medicationName}</td>
+                          <td className="px-4 py-3 text-gray-600">{p.dosage}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${p.status === "verified" ? "bg-green-100 text-green-700" : p.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {new Date(p.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => setSelectedPrescription(p)} className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors">
+                              View
+                            </button>
+                            <button onClick={() => handleDeletePrescription(p.id)} disabled={actionLoading === p.id} className="ml-2 px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium rounded-lg transition-colors">
+                              {actionLoading === p.id ? "..." : "Delete"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         {/* MESSAGES VIEW */}
         {activeView === "messages" && (
           <MessagesView messages={messages} loading={loading} selectedMessage={selectedMessage} setSelectedMessage={setSelectedMessage} onMarkRead={handleMarkMessageRead} onDeleteDocs={handleDeleteDocuments} />
@@ -1117,6 +1223,43 @@ export default function AdminDashboardPage() {
 
       {/* Subscription Detail Modal */}
       {selectedSubscription && <SubscriptionModal subscription={selectedSubscription} onClose={() => setSelectedSubscription(null)} onCancel={handleCancelSubscription} actionLoading={actionLoading} />}
+
+      {/* Prescription Detail Modal */}
+      {selectedPrescription && <PrescriptionModal prescription={selectedPrescription} onClose={() => setSelectedPrescription(null)} onDelete={handleDeletePrescription} actionLoading={actionLoading} />}
+
+    </div>
+  );
+}
+
+function PrescriptionModal({ prescription, onClose, onDelete, actionLoading }: { prescription: Prescription; onClose: () => void; onDelete: (id: string) => void; actionLoading: string | null }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8">
+        <div className="flex items-start justify-between p-6 border-b border-gray-200">
+          <div><h2 className="text-xl font-bold text-gray-900">Prescription Details</h2><p className="text-xs text-gray-400 mt-1 font-mono">{prescription.id}</p></div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+        <div className="p-6 space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div><p className="text-xs text-gray-500">Patient</p><p className="font-medium text-gray-900">{prescription.patientName}</p></div>
+            <div><p className="text-xs text-gray-500">Pharmacy</p><p className="text-gray-900">{prescription.pharmacyName || "Pending assignment"}</p></div>
+          </div>
+          <div><p className="text-xs text-gray-500">Medication</p><p className="text-gray-900">{prescription.medicationName}</p><p className="text-sm font-medium">Dosage: {prescription.dosage} · Qty: {prescription.quantity}</p></div>
+          <div><p className="text-xs text-gray-500">Prescriber</p><p className="text-gray-900">{prescription.prescriberName}</p><p className="text-xs text-gray-400">{prescription.prescriberLicense}</p></div>
+          {prescription.instructions && <div><p className="text-xs text-gray-500">Instructions</p><p className="text-gray-700 bg-gray-50 rounded p-2">{prescription.instructions}</p></div>}
+          {prescription.notes && <div><p className="text-xs text-gray-500">Notes</p><p className="text-gray-700 bg-blue-50 rounded p-2">{prescription.notes}</p></div>}
+          {prescription.documentUrl && (
+            <div><p className="text-xs text-gray-500">Document</p><a href={prescription.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">📎 View Prescription Document</a></div>
+          )}
+          <div><p className="text-xs text-gray-500">Status</p><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${prescription.status === "verified" ? "bg-green-100 text-green-700" : prescription.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>{prescription.status}</span></div>
+        </div>
+        <div className="flex justify-between gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+          <button onClick={() => onDelete(prescription.id)} disabled={actionLoading === prescription.id} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+            {actionLoading === prescription.id ? "…" : "Delete Prescription"}
+          </button>
+          <button onClick={onClose} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">Close</button>
+        </div>
+      </div>
     </div>
   );
 }
