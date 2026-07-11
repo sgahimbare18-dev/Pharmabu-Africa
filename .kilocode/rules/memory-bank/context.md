@@ -279,4 +279,4 @@ export async function GET() {
 | 2026-06-28 | Added Prescription interface and prescriptions state to admin dashboard |
 | 2026-06-28 | Added prescriptions tab button and prescriptions view with table/list in admin dashboard |
 | 2026-06-28 | Added handleDeletePrescription function and PrescriptionModal component to admin dashboard |
-| 2026-07-11 | Migrated auth + admin API routes from file-based store to Drizzle DB (`@/db`); extracted auth helpers to `src/lib/auth.ts` |
+| 2026-07-11 | Migrated all remaining API routes to Drizzle DB; switched SQLite driver from `better-sqlite3` to `bun:sqlite` for Bun compatibility; added seed script and committed `pharmalink.db` so production logins work |
