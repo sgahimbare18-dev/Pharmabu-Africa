@@ -9,9 +9,10 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun run src/db/migrate.ts"
+    "db:migrate": "bun run src/db/migrate.ts",
+    "db:seed": "bun run src/db/seed.ts"
   },
-"dependencies": {
+  "dependencies": {
     "drizzle-orm": "^0.45.1",
     "next": "^16.2.6",
     "react": "^19.2.3",
