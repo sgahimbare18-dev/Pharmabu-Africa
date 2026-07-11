@@ -28,8 +28,7 @@
 /.data
 
 # SQLite database
-*.db
-pharmalink.db
+# pharmalink.db is committed for deployment so logins work in production
 
 # debug
 npm-debug.log*

@@ -1,11 +1,9 @@
 /**
  * Database client for PharmabuLink Africa
- * Uses Drizzle ORM with better-sqlite3 for local SQLite storage
+ * Uses Drizzle ORM with Bun SQLite
  */
 
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/bun-sqlite";
 import * as schema from "./schema";
 
-const sqlite = new Database("pharmalink.db");
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle("pharmalink.db", { schema });
