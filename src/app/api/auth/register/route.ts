@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser, getUserByEmail, hashPassword } from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq, like } from "drizzle-orm";
+import { hashPassword } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,22 +25,29 @@ export async function POST(req: NextRequest) {
     }
 
     // Check duplicate
-    const existing = getUserByEmail(email);
-    if (existing) {
+    const existing = await db
+      .select()
+      .from(users)
+      .where(like(users.email, email.toLowerCase()))
+      .limit(1);
+    if (existing.length > 0) {
       return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
     }
 
-    const user = createUser({
+    const userId = crypto.randomUUID();
+    await db.insert(users).values({
+      id: userId,
       name,
       email,
       phone,
       country,
       passwordHash: hashPassword(password),
       role: "patient",
+      createdAt: new Date().toISOString(),
     });
 
     return NextResponse.json(
-      { message: "Account created successfully.", userId: user.id },
+      { message: "Account created successfully.", userId },
       { status: 201 }
     );
   } catch (err) {

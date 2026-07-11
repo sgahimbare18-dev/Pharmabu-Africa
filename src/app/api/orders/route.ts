@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrdersByPatient, getOrdersByPharmacy, createOrder, Order } from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { orders } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 
 // GET /api/orders - Get orders (filtered by patientId or pharmacyId query param)
 export async function GET(request: NextRequest) {
@@ -7,24 +10,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get("patientId");
     const pharmacyId = searchParams.get("pharmacyId");
-    
-    let orders: Order[];
-    
+
+    let result;
+
     if (patientId) {
-      orders = getOrdersByPatient(patientId);
+      result = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.patientId, patientId))
+        .orderBy(desc(orders.createdAt));
     } else if (pharmacyId) {
-      orders = getOrdersByPharmacy(pharmacyId);
+      result = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.pharmacyId, pharmacyId))
+        .orderBy(desc(orders.createdAt));
     } else {
       return NextResponse.json(
         { error: "Either patientId or pharmacyId is required" },
         { status: 400 }
       );
     }
-    
-    // Sort by most recent first
-    orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    return NextResponse.json(orders);
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching orders:", error);
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
@@ -35,18 +43,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { 
-      patientId, 
-      patientName, 
-      patientPhone, 
-      pharmacyId, 
-      pharmacyName, 
-      medicationId, 
-      medicationName, 
-      medicationPrice, 
-      quantity, 
+    const {
+      patientId,
+      patientName,
+      patientPhone,
+      pharmacyId,
+      pharmacyName,
+      medicationId,
+      medicationName,
+      medicationPrice,
+      quantity,
       symptoms,
-      deliveryAddress 
+      deliveryAddress
     } = body;
 
     // Validation
@@ -58,8 +66,10 @@ export async function POST(request: NextRequest) {
     }
 
     const totalPrice = Number(medicationPrice) * Number(quantity);
+    const now = new Date().toISOString();
 
-    const order = createOrder({
+    const order = {
+      id: crypto.randomUUID(),
       patientId,
       patientName,
       patientPhone: patientPhone || "",
@@ -71,9 +81,15 @@ export async function POST(request: NextRequest) {
       quantity: Number(quantity),
       totalPrice,
       symptoms,
+      pharmacyNotes: "",
+      status: "pending" as const,
+      paymentMethod: "pay_on_delivery" as const,
       deliveryAddress,
-      paymentMethod: "pay_on_delivery",
-    });
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(orders).values(order);
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

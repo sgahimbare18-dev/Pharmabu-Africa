@@ -159,6 +159,13 @@ PharmabuLink Africa is a secure, legally compliant Digital Pharmacy Marketplace 
   - Added Drug Safety tab to patient dashboard
   - Supports contraindicated, major, moderate, minor severity levels
   - Bilingual translations (EN/FR)
+- [x] Migrated auth & admin API routes from file-based store to Drizzle DB (production fix)
+  - New `src/lib/auth.ts` extracts `hashPassword` + admin credentials from `src/lib/store.ts`
+  - `src/api/auth/register`, `auth/signin`, `auth/register-pharmacy` now use `db` (users/pharmacies/pharmacyStaff)
+  - `src/api/admin/signin`, `admin/users`, `admin/pharmacies` (+`[id]`, `[id]/status`, `[id]/documents`), `admin/orders`, `admin/subscriptions`, `admin/medications` now use Drizzle queries
+  - Email lookups use case-insensitive `like`; deletes/updates verify existence first to preserve 404 semantics
+  - `upload` route untouched (uses `fs` directly, no store dependency)
+  - `bun typecheck` and `bun lint` pass
 
 ## Current Structure
 
@@ -177,7 +184,10 @@ PharmabuLink Africa is a secure, legally compliant Digital Pharmacy Marketplace 
 | `src/components/sections/ForPharmacies.tsx` | Pharmacy benefits + Family Pharmacist | ✅ Ready |
 | `src/components/sections/CTA.tsx` | Call to action | ✅ Ready |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
-| `src/lib/store.ts` | File-based JSON data store | ✅ Ready |
+| `src/lib/store.ts` | File-based JSON data store (legacy; still used by non-admin marketplace routes) | ⚠️ Deprecated for auth/admin |
+| `src/lib/auth.ts` | Password hashing + admin credentials (extracted from store) | ✅ Ready |
+| `src/db/index.ts` | Drizzle ORM (better-sqlite3) client `db` | ✅ Ready |
+| `src/db/schema.ts` | Drizzle schema (users, pharmacies, medications, orders, subscriptions, etc.) | ✅ Ready |
 | `src/app/register/page.tsx` | Patient registration form | ✅ Ready |
 | `src/app/register/pharmacy/page.tsx` | Pharmacy registration form | ✅ Ready |
 | `src/app/signin/page.tsx` | Sign-in page (patients + pharmacies) | ✅ Ready |
@@ -206,7 +216,7 @@ E-commerce marketplace and payment system are now live. Remaining MVP tasks:
 
 1. Prescription upload and management
 2. Delivery tracking
-3. Replace file-based store with PostgreSQL/SQLite (Drizzle or Prisma)
+3. Replace file-based store with PostgreSQL/SQLite (Drizzle or Prisma) — **auth/admin routes migrated; marketplace routes (orders, medications, payments, messages, staff, etc.) still use store**
 4. Replace localStorage session with JWT cookies or NextAuth
 
 ## Quick Start Guide
@@ -269,3 +279,4 @@ export async function GET() {
 | 2026-06-28 | Added Prescription interface and prescriptions state to admin dashboard |
 | 2026-06-28 | Added prescriptions tab button and prescriptions view with table/list in admin dashboard |
 | 2026-06-28 | Added handleDeletePrescription function and PrescriptionModal component to admin dashboard |
+| 2026-07-11 | Migrated auth + admin API routes from file-based store to Drizzle DB (`@/db`); extracted auth helpers to `src/lib/auth.ts` |

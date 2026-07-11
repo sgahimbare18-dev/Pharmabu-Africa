@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import { 
-  getPatientProfileByUserId, 
-  getPatientProfileById, 
-  createPatientProfile, 
-  updatePatientProfile, 
-  deletePatientProfile,
-  getPatientProfiles 
-} from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { patientProfiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +11,8 @@ export async function GET(request: Request) {
     const id = searchParams.get("id");
 
     if (id) {
-      const profile = getPatientProfileById(id);
+      const rows = await db.select().from(patientProfiles).where(eq(patientProfiles.id, id)).limit(1);
+      const profile = rows[0];
       if (!profile) {
         return NextResponse.json({ error: "Profile not found" }, { status: 404 });
       }
@@ -23,7 +20,8 @@ export async function GET(request: Request) {
     }
 
     if (userId) {
-      const profile = getPatientProfileByUserId(userId);
+      const rows = await db.select().from(patientProfiles).where(eq(patientProfiles.userId, userId)).limit(1);
+      const profile = rows[0];
       if (!profile) {
         return NextResponse.json({ error: "Profile not found" }, { status: 404 });
       }
@@ -31,8 +29,8 @@ export async function GET(request: Request) {
     }
 
     // Return all profiles (admin only)
-    const profiles = getPatientProfiles();
-    return NextResponse.json(profiles);
+    const rows = await db.select().from(patientProfiles);
+    return NextResponse.json(rows);
   } catch (error) {
     console.error("Error fetching patient profile:", error);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
@@ -42,21 +40,27 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Check if profile already exists for this user
-    const existing = getPatientProfileByUserId(body.userId);
-    if (existing) {
+    const existing = await db
+      .select()
+      .from(patientProfiles)
+      .where(eq(patientProfiles.userId, body.userId))
+      .limit(1);
+    if (existing.length > 0) {
       return NextResponse.json({ error: "Profile already exists" }, { status: 400 });
     }
 
-    const profile = createPatientProfile({
+    const now = new Date().toISOString();
+    const profile = {
+      id: crypto.randomUUID(),
       userId: body.userId,
       dateOfBirth: body.dateOfBirth || "",
       age: body.age || 0,
-      gender: body.gender || "other",
+      gender: (body.gender || "other") as "male" | "female" | "other",
       address: body.address || "",
       city: body.city || "",
-      country: body.country || "kenya",
+      country: (body.country || "kenya") as "kenya" | "burundi",
       occupation: body.occupation || "",
       educationLevel: body.educationLevel || "",
       profilePicture: body.profilePicture || "",
@@ -64,7 +68,11 @@ export async function POST(request: Request) {
       emergencyContactPhone: body.emergencyContactPhone || "",
       medicalNotes: body.medicalNotes || "",
       allergies: body.allergies || "",
-    });
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(patientProfiles).values(profile);
 
     return NextResponse.json(profile, { status: 201 });
   } catch (error) {
@@ -82,12 +90,19 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Profile ID required" }, { status: 400 });
     }
 
-    const profile = updatePatientProfile(id, data);
-    if (!profile) {
+    const existing = await db.select().from(patientProfiles).where(eq(patientProfiles.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    return NextResponse.json(profile);
+    await db
+      .update(patientProfiles)
+      .set({ ...data, updatedAt: new Date().toISOString() })
+      .where(eq(patientProfiles.id, id));
+
+    const rows = await db.select().from(patientProfiles).where(eq(patientProfiles.id, id)).limit(1);
+
+    return NextResponse.json(rows[0]);
   } catch (error) {
     console.error("Error updating patient profile:", error);
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
@@ -103,10 +118,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Profile ID required" }, { status: 400 });
     }
 
-    const deleted = deletePatientProfile(id);
-    if (!deleted) {
+    const existing = await db.select().from(patientProfiles).where(eq(patientProfiles.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
+
+    await db.delete(patientProfiles).where(eq(patientProfiles.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

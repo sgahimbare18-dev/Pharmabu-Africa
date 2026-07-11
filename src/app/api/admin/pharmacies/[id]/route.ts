@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getPharmacyById, deletePharmacy } from "@/lib/store";
+import { db } from "@/db";
+import { pharmacies } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // DELETE /api/admin/pharmacies/[id] - Delete a pharmacy
 
@@ -15,21 +17,17 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    
+
     if (!id) {
       return NextResponse.json({ error: "Pharmacy ID required" }, { status: 400 });
     }
 
-    const pharmacy = getPharmacyById(id);
-    if (!pharmacy) {
+    const existing = await db.select().from(pharmacies).where(eq(pharmacies.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Pharmacy not found" }, { status: 404 });
     }
 
-    const success = deletePharmacy(id);
-
-    if (!success) {
-      return NextResponse.json({ error: "Failed to delete pharmacy" }, { status: 500 });
-    }
+    await db.delete(pharmacies).where(eq(pharmacies.id, id));
 
     return NextResponse.json({ message: "Pharmacy deleted successfully" });
   } catch (error) {

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPharmacy, getPharmacyByEmail, getUserByEmail, hashPassword } from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { pharmacies, users } from "@/db/schema";
+import { like } from "drizzle-orm";
+import { hashPassword } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,13 +77,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Check duplicate across both users and pharmacies
-    const existingUser = getUserByEmail(email);
-    const existingPharmacy = getPharmacyByEmail(email);
-    if (existingUser || existingPharmacy) {
+    const existingUserRows = await db
+      .select()
+      .from(users)
+      .where(like(users.email, email.toLowerCase()))
+      .limit(1);
+    const existingPharmacyRows = await db
+      .select()
+      .from(pharmacies)
+      .where(like(pharmacies.email, email.toLowerCase()))
+      .limit(1);
+    if (existingUserRows.length > 0 || existingPharmacyRows.length > 0) {
       return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
     }
 
-    const pharmacy = createPharmacy({
+    const pharmacyId = crypto.randomUUID();
+    await db.insert(pharmacies).values({
+      id: pharmacyId,
       pharmacyName,
       pharmacistName,
       email,
@@ -98,6 +112,8 @@ export async function POST(req: NextRequest) {
       servicesOffered: servicesOffered || "",
       passwordHash: hashPassword(password),
       role: "pharmacy",
+      status: "pending",
+      createdAt: new Date().toISOString(),
       // File upload paths
       licenseDocument: licenseDocument || "",
       qualificationDocument: qualificationDocument || "",
@@ -108,7 +124,7 @@ export async function POST(req: NextRequest) {
       {
         message:
           "Pharmacy registration submitted. Your account is pending verification by our team. You will be notified by email once approved.",
-        pharmacyId: pharmacy.id,
+        pharmacyId,
       },
       { status: 201 }
     );

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPharmacies } from "@/lib/store";
+import { db } from "@/db";
+import { pharmacies } from "@/db/schema";
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,7 +9,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    const pharmacies = getPharmacies().map((p) => ({
+    const rows = await db.select().from(pharmacies);
+    const pharmaciesList = rows.map((p) => ({
       id: p.id,
       pharmacyName: p.pharmacyName,
       pharmacistName: p.pharmacistName,
@@ -39,7 +41,7 @@ export async function GET(req: NextRequest) {
       createdAt: p.createdAt,
     }));
 
-    return NextResponse.json({ pharmacies });
+    return NextResponse.json({ pharmacies: pharmaciesList });
   } catch (err) {
     console.error("List pharmacies error:", err);
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });

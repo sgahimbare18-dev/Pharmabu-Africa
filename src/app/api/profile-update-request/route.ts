@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
-import { 
-  getProfileUpdateRequests, 
-  getProfileUpdateRequestById, 
-  getProfileUpdateRequestsByUser,
-  getPendingProfileUpdateRequests,
-  createProfileUpdateRequest, 
-  updateProfileUpdateRequest 
-} from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { profileUpdateRequests } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import type { ProfileUpdateRequest } from "@/db/schema";
+
+// Map a DB row to the API response shape (requestedFields is stored as a JSON
+// string in the database but exposed as an object in the API contract).
+function serializeRequest(row: ProfileUpdateRequest) {
+  return {
+    ...row,
+    requestedFields: row.requestedFields ? JSON.parse(row.requestedFields) : {},
+  };
+}
 
 export async function GET(request: Request) {
   try {
@@ -16,26 +22,30 @@ export async function GET(request: Request) {
     const pending = searchParams.get("pending");
 
     if (id) {
-      const request_data = getProfileUpdateRequestById(id);
+      const rows = await db.select().from(profileUpdateRequests).where(eq(profileUpdateRequests.id, id)).limit(1);
+      const request_data = rows[0];
       if (!request_data) {
         return NextResponse.json({ error: "Profile update request not found" }, { status: 404 });
       }
-      return NextResponse.json(request_data);
+      return NextResponse.json(serializeRequest(request_data));
     }
 
     if (userId) {
-      const requests = getProfileUpdateRequestsByUser(userId);
-      return NextResponse.json(requests);
+      const rows = await db.select().from(profileUpdateRequests).where(eq(profileUpdateRequests.userId, userId));
+      return NextResponse.json(rows.map(serializeRequest));
     }
 
     if (pending === "true") {
-      const requests = getPendingProfileUpdateRequests();
-      return NextResponse.json(requests);
+      const rows = await db
+        .select()
+        .from(profileUpdateRequests)
+        .where(eq(profileUpdateRequests.status, "pending"));
+      return NextResponse.json(rows.map(serializeRequest));
     }
 
     // Return all profile update requests (admin only)
-    const requests = getProfileUpdateRequests();
-    return NextResponse.json(requests);
+    const rows = await db.select().from(profileUpdateRequests);
+    return NextResponse.json(rows.map(serializeRequest));
   } catch (error) {
     console.error("Error fetching profile update requests:", error);
     return NextResponse.json({ error: "Failed to fetch profile update requests" }, { status: 500 });
@@ -46,14 +56,22 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const profileRequest = createProfileUpdateRequest({
+    const now = new Date().toISOString();
+    const profileRequest = {
+      id: crypto.randomUUID(),
       userId: body.userId,
       userName: body.userName,
       userEmail: body.userEmail,
-      requestedFields: body.requestedFields,
-    });
+      requestedFields: JSON.stringify(body.requestedFields ?? {}),
+      status: "pending" as const,
+      adminNotes: "",
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    return NextResponse.json(profileRequest, { status: 201 });
+    await db.insert(profileUpdateRequests).values(profileRequest);
+
+    return NextResponse.json(serializeRequest(profileRequest), { status: 201 });
   } catch (error) {
     console.error("Error creating profile update request:", error);
     return NextResponse.json({ error: "Failed to create profile update request" }, { status: 500 });
@@ -69,12 +87,21 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Request ID required" }, { status: 400 });
     }
 
-    const profileRequest = updateProfileUpdateRequest(id, data);
-    if (!profileRequest) {
+    const existing = await db.select().from(profileUpdateRequests).where(eq(profileUpdateRequests.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Profile update request not found" }, { status: 404 });
     }
 
-    return NextResponse.json(profileRequest);
+    const updateData: Record<string, unknown> = { ...data, updatedAt: new Date().toISOString() };
+    if ("requestedFields" in data && typeof data.requestedFields !== "string") {
+      updateData.requestedFields = JSON.stringify(data.requestedFields);
+    }
+
+    await db.update(profileUpdateRequests).set(updateData).where(eq(profileUpdateRequests.id, id));
+
+    const rows = await db.select().from(profileUpdateRequests).where(eq(profileUpdateRequests.id, id)).limit(1);
+
+    return NextResponse.json(serializeRequest(rows[0]));
   } catch (error) {
     console.error("Error updating profile update request:", error);
     return NextResponse.json({ error: "Failed to update profile update request" }, { status: 500 });

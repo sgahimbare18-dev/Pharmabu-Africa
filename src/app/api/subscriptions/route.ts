@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  getSubscriptionsByPatient,
-  getSubscriptionsByPharmacy,
-  getActiveSubscriptionsByPatient,
-  createSubscription,
-  updateSubscription,
-  cancelSubscription,
-} from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { subscriptions } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 
 // GET /api/subscriptions - List subscriptions
 export async function GET(request: Request) {
@@ -17,14 +13,19 @@ export async function GET(request: Request) {
     const active = searchParams.get("active");
 
     if (patientId) {
-      const subscriptions = active === "true" 
-        ? getActiveSubscriptionsByPatient(patientId)
-        : getSubscriptionsByPatient(patientId);
-      return NextResponse.json(subscriptions);
+      const rows =
+        active === "true"
+          ? await db
+              .select()
+              .from(subscriptions)
+              .where(and(eq(subscriptions.patientId, patientId), eq(subscriptions.status, "active")))
+          : await db.select().from(subscriptions).where(eq(subscriptions.patientId, patientId));
+      return NextResponse.json(rows);
     }
 
     if (pharmacyId) {
-      return NextResponse.json(getSubscriptionsByPharmacy(pharmacyId));
+      const rows = await db.select().from(subscriptions).where(eq(subscriptions.pharmacyId, pharmacyId));
+      return NextResponse.json(rows);
     }
 
     return NextResponse.json({ error: "Missing patientId or pharmacyId" }, { status: 400 });
@@ -56,17 +57,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const subscription = createSubscription({
+    const now = new Date().toISOString();
+    const subscription = {
+      id: crypto.randomUUID(),
       patientId,
       patientName: patientName || "",
       patientPhone: patientPhone || "",
       pharmacyId,
       pharmacyName: pharmacyName || "",
       pharmacyCity: pharmacyCity || "",
-      subscriptionType: "monthly",
+      subscriptionType: "monthly" as const,
       monthlyAmount: Number(monthlyAmount),
       deliveryAddress,
-    });
+      status: "active" as const,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(subscriptions).values(subscription);
 
     return NextResponse.json(subscription, { status: 201 });
   } catch (error) {
@@ -85,12 +93,19 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Missing subscription ID" }, { status: 400 });
     }
 
-    const subscription = updateSubscription(id, data);
-    if (!subscription) {
+    const existing = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
     }
 
-    return NextResponse.json(subscription);
+    await db
+      .update(subscriptions)
+      .set({ ...data, updatedAt: new Date().toISOString() })
+      .where(eq(subscriptions.id, id));
+
+    const rows = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+
+    return NextResponse.json(rows[0]);
   } catch (error) {
     console.error("Error updating subscription:", error);
     return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });

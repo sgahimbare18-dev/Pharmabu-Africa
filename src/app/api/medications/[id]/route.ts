@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMedicationById, updateMedication, deleteMedication } from "@/lib/store";
+import { db } from "@/db";
+import { medications } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // GET /api/medications/[id] - Get a single medication
 export async function GET(
@@ -8,12 +10,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const medication = getMedicationById(id);
-    
+    const rows = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+    const medication = rows[0];
+
     if (!medication) {
       return NextResponse.json({ error: "Medication not found" }, { status: 404 });
     }
-    
+
     return NextResponse.json(medication);
   } catch (error) {
     console.error("Error fetching medication:", error);
@@ -29,14 +32,20 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
-    const medication = updateMedication(id, body);
-    
-    if (!medication) {
+
+    const existing = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Medication not found" }, { status: 404 });
     }
-    
-    return NextResponse.json(medication);
+
+    await db
+      .update(medications)
+      .set({ ...body, updatedAt: new Date().toISOString() })
+      .where(eq(medications.id, id));
+
+    const rows = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+
+    return NextResponse.json(rows[0]);
   } catch (error) {
     console.error("Error updating medication:", error);
     return NextResponse.json({ error: "Failed to update medication" }, { status: 500 });
@@ -50,12 +59,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const success = deleteMedication(id);
-    
-    if (!success) {
+
+    const existing = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Medication not found" }, { status: 404 });
     }
-    
+
+    await db.delete(medications).where(eq(medications.id, id));
+
     return NextResponse.json({ message: "Medication deleted successfully" });
   } catch (error) {
     console.error("Error deleting medication:", error);

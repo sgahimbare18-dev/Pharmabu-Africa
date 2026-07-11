@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPharmacyById, updatePharmacyStatus } from "@/lib/store";
+import { db } from "@/db";
+import { pharmacies } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(
   req: NextRequest,
@@ -23,15 +25,18 @@ export async function POST(
       );
     }
 
-    const pharmacy = getPharmacyById(id);
-    if (!pharmacy) {
+    const existing = await db.select().from(pharmacies).where(eq(pharmacies.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Pharmacy not found." }, { status: 404 });
     }
 
-    const updated = updatePharmacyStatus(id, status);
+    await db.update(pharmacies).set({ status }).where(eq(pharmacies.id, id));
+
+    const updatedRows = await db.select().from(pharmacies).where(eq(pharmacies.id, id)).limit(1);
+
     return NextResponse.json({
       message: `Pharmacy ${status === "verified" ? "approved" : "rejected"} successfully.`,
-      pharmacy: updated,
+      pharmacy: updatedRows[0],
     });
   } catch (err) {
     console.error("Update pharmacy status error:", err);

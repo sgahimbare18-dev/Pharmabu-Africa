@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADMIN_EMAIL, ADMIN_PASSWORD_HASH, hashPassword } from "@/lib/store";
+import { ADMIN_EMAIL, ADMIN_PASSWORD_HASH, hashPassword } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {

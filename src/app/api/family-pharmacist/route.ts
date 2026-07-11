@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
-import { 
-  getFamilyPharmacists, 
-  getFamilyPharmacistById, 
-  getFamilyPharmacistsByPatient,
-  getFamilyPharmacistsByPharmacy,
-  getActiveFamilyPharmacistByPatient,
-  createFamilyPharmacist, 
-  updateFamilyPharmacist, 
-  deleteFamilyPharmacist 
-} from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { familyPharmacists } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
@@ -19,7 +13,8 @@ export async function GET(request: Request) {
     const active = searchParams.get("active");
 
     if (id) {
-      const familyPharm = getFamilyPharmacistById(id);
+      const rows = await db.select().from(familyPharmacists).where(eq(familyPharmacists.id, id)).limit(1);
+      const familyPharm = rows[0];
       if (!familyPharm) {
         return NextResponse.json({ error: "Family pharmacist not found" }, { status: 404 });
       }
@@ -27,23 +22,27 @@ export async function GET(request: Request) {
     }
 
     if (patientId && active === "true") {
-      const familyPharm = getActiveFamilyPharmacistByPatient(patientId);
-      return NextResponse.json(familyPharm || null);
+      const rows = await db
+        .select()
+        .from(familyPharmacists)
+        .where(and(eq(familyPharmacists.patientId, patientId), eq(familyPharmacists.status, "active")))
+        .limit(1);
+      return NextResponse.json(rows[0] || null);
     }
 
     if (patientId) {
-      const familyPharms = getFamilyPharmacistsByPatient(patientId);
-      return NextResponse.json(familyPharms);
+      const rows = await db.select().from(familyPharmacists).where(eq(familyPharmacists.patientId, patientId));
+      return NextResponse.json(rows);
     }
 
     if (pharmacyId) {
-      const familyPharms = getFamilyPharmacistsByPharmacy(pharmacyId);
-      return NextResponse.json(familyPharms);
+      const rows = await db.select().from(familyPharmacists).where(eq(familyPharmacists.pharmacyId, pharmacyId));
+      return NextResponse.json(rows);
     }
 
     // Return all family pharmacists (admin only)
-    const familyPharms = getFamilyPharmacists();
-    return NextResponse.json(familyPharms);
+    const rows = await db.select().from(familyPharmacists);
+    return NextResponse.json(rows);
   } catch (error) {
     console.error("Error fetching family pharmacists:", error);
     return NextResponse.json({ error: "Failed to fetch family pharmacists" }, { status: 500 });
@@ -54,16 +53,34 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const familyPharm = createFamilyPharmacist({
+    // Deactivate any existing active assignment for this patient
+    await db
+      .update(familyPharmacists)
+      .set({ status: "inactive" })
+      .where(and(eq(familyPharmacists.patientId, body.patientId), eq(familyPharmacists.status, "active")));
+
+    const now = new Date();
+    const nextMonth = new Date(now);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    const familyPharm = {
+      id: crypto.randomUUID(),
       patientId: body.patientId,
       patientName: body.patientName,
       pharmacyId: body.pharmacyId,
       pharmacyName: body.pharmacyName,
       pharmacistName: body.pharmacistName,
+      status: "pending_payment" as const, // Wait for payment
       monthlyFee: body.monthlyFee || 500,
-      paymentMethod: "",
+      paymentStatus: "pending" as const,
+      paymentMethod: "" as unknown as "mpesa" | "mobile_money" | "card" | null,
+      paymentDate: "",
+      nextPaymentDate: nextMonth.toISOString(),
+      assignedAt: new Date().toISOString(),
       notes: body.notes || "",
-    });
+    };
+
+    await db.insert(familyPharmacists).values(familyPharm);
 
     return NextResponse.json(familyPharm, { status: 201 });
   } catch (error) {
@@ -81,12 +98,16 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Family pharmacist ID required" }, { status: 400 });
     }
 
-    const familyPharm = updateFamilyPharmacist(id, data);
-    if (!familyPharm) {
+    const existing = await db.select().from(familyPharmacists).where(eq(familyPharmacists.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Family pharmacist not found" }, { status: 404 });
     }
 
-    return NextResponse.json(familyPharm);
+    await db.update(familyPharmacists).set(data).where(eq(familyPharmacists.id, id));
+
+    const rows = await db.select().from(familyPharmacists).where(eq(familyPharmacists.id, id)).limit(1);
+
+    return NextResponse.json(rows[0]);
   } catch (error) {
     console.error("Error updating family pharmacist:", error);
     return NextResponse.json({ error: "Failed to update family pharmacist" }, { status: 500 });
@@ -102,10 +123,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Family pharmacist ID required" }, { status: 400 });
     }
 
-    const deleted = deleteFamilyPharmacist(id);
-    if (!deleted) {
+    const existing = await db.select().from(familyPharmacists).where(eq(familyPharmacists.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Family pharmacist not found" }, { status: 404 });
     }
+
+    await db.delete(familyPharmacists).where(eq(familyPharmacists.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

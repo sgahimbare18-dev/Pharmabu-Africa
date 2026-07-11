@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getMedications, getMedicationById, updateMedication, deleteMedication } from "@/lib/store";
+import { db } from "@/db";
+import { medications } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // GET /api/admin/medications - List all medications
 // PUT /api/admin/medications - Update a medication
@@ -17,15 +19,16 @@ export async function GET(request: Request) {
     }
 
     if (id) {
-      const medication = getMedicationById(id);
+      const medRows = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+      const medication = medRows[0];
       if (!medication) {
         return NextResponse.json({ error: "Medication not found" }, { status: 404 });
       }
       return NextResponse.json({ medication });
     }
 
-    const medications = getMedications();
-    return NextResponse.json({ medications });
+    const allMedications = await db.select().from(medications);
+    return NextResponse.json({ medications: allMedications });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -46,14 +49,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Medication ID required" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const medication = updateMedication(id, body);
-
-    if (!medication) {
+    const existing = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Medication not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ medication, message: "Medication updated successfully" });
+    const body = await request.json();
+    await db
+      .update(medications)
+      .set({ ...body, updatedAt: new Date().toISOString() })
+      .where(eq(medications.id, id));
+
+    const medRows = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+
+    return NextResponse.json({ medication: medRows[0], message: "Medication updated successfully" });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -74,11 +83,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Medication ID required" }, { status: 400 });
     }
 
-    const success = deleteMedication(id);
-
-    if (!success) {
+    const existing = await db.select().from(medications).where(eq(medications.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Medication not found" }, { status: 404 });
     }
+
+    await db.delete(medications).where(eq(medications.id, id));
 
     return NextResponse.json({ message: "Medication deleted successfully" });
   } catch (error) {

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSubscriptions, getSubscriptionById, updateSubscription, cancelSubscription } from "@/lib/store";
+import { db } from "@/db";
+import { subscriptions } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // GET /api/admin/subscriptions - List all subscriptions
 // PUT /api/admin/subscriptions - Update a subscription
@@ -17,15 +19,16 @@ export async function GET(request: Request) {
     }
 
     if (id) {
-      const subscription = getSubscriptionById(id);
+      const subRows = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+      const subscription = subRows[0];
       if (!subscription) {
         return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
       }
       return NextResponse.json({ subscription });
     }
 
-    const subscriptions = getSubscriptions();
-    return NextResponse.json({ subscriptions });
+    const allSubscriptions = await db.select().from(subscriptions);
+    return NextResponse.json({ subscriptions: allSubscriptions });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -46,14 +49,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Subscription ID required" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const subscription = updateSubscription(id, body);
-
-    if (!subscription) {
+    const existing = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ subscription, message: "Subscription updated successfully" });
+    const body = await request.json();
+    await db
+      .update(subscriptions)
+      .set({ ...body, updatedAt: new Date().toISOString() })
+      .where(eq(subscriptions.id, id));
+
+    const subRows = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+
+    return NextResponse.json({ subscription: subRows[0], message: "Subscription updated successfully" });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -74,11 +83,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Subscription ID required" }, { status: 400 });
     }
 
-    const subscription = cancelSubscription(id);
-
-    if (!subscription) {
+    const existing = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
     }
+
+    await db
+      .update(subscriptions)
+      .set({ status: "cancelled", updatedAt: new Date().toISOString() })
+      .where(eq(subscriptions.id, id));
 
     return NextResponse.json({ message: "Subscription cancelled successfully" });
   } catch (error) {

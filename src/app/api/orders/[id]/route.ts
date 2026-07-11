@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrder } from "@/lib/store";
+import { db } from "@/db";
+import { orders } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // GET /api/orders/[id] - Get a single order
 export async function GET(
@@ -8,12 +10,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const order = getOrderById(id);
-    
+    const rows = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+    const order = rows[0];
+
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
-    
+
     return NextResponse.json(order);
   } catch (error) {
     console.error("Error fetching order:", error);
@@ -29,14 +32,20 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
-    const order = updateOrder(id, body);
-    
-    if (!order) {
+
+    const existing = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
-    
-    return NextResponse.json(order);
+
+    await db
+      .update(orders)
+      .set({ ...body, updatedAt: new Date().toISOString() })
+      .where(eq(orders.id, id));
+
+    const rows = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+
+    return NextResponse.json(rows[0]);
   } catch (error) {
     console.error("Error updating order:", error);
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 });

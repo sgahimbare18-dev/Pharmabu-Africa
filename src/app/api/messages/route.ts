@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createMessage, getMessagesByPharmacy, getMessages } from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { messages } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
@@ -9,14 +12,17 @@ export async function GET(request: Request) {
 
     // If admin session, return all messages
     if (adminSession === "pharmalink-admin") {
-      const messages = getMessages();
-      return NextResponse.json({ messages });
+      const allMessages = await db.select().from(messages);
+      return NextResponse.json({ messages: allMessages });
     }
 
     // If pharmacy session, return only their messages
     if (pharmacyId) {
-      const messages = getMessagesByPharmacy(pharmacyId);
-      return NextResponse.json({ messages });
+      const pharmacyMessages = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.pharmacyId, pharmacyId));
+      return NextResponse.json({ messages: pharmacyMessages });
     }
 
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,14 +40,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const message = createMessage({
+    const message = {
+      id: crypto.randomUUID(),
       pharmacyId,
       pharmacyName,
       pharmacistName,
       subject,
       content,
-      type: type || "general",
-    });
+      status: "unread" as const,
+      type: (type || "general") as "deletion_request" | "general",
+      createdAt: new Date().toISOString(),
+    };
+
+    await db.insert(messages).values(message);
 
     return NextResponse.json({ message, success: "Message sent successfully" });
   } catch (error) {

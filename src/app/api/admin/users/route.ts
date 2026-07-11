@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getUsers, getUserById, deleteUserById, getUserByEmail, hashPassword, createUser } from "@/lib/store";
+import crypto from "crypto";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq, like } from "drizzle-orm";
+import { hashPassword } from "@/lib/auth";
 
 // GET /api/admin/users - List all patients
 // POST /api/admin/users - Create a patient
@@ -17,15 +21,16 @@ export async function GET(request: Request) {
     }
 
     if (id) {
-      const user = getUserById(id);
+      const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      const user = userRows[0];
       if (!user) {
         return NextResponse.json({ error: "Patient not found" }, { status: 404 });
       }
       return NextResponse.json({ user });
     }
 
-    const users = getUsers();
-    return NextResponse.json({ users });
+    const allUsers = await db.select().from(users);
+    return NextResponse.json({ users: allUsers });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -47,22 +52,30 @@ export async function POST(request: Request) {
     }
 
     // Check if email already exists
-    const existing = getUserByEmail(email);
-    if (existing) {
+    const existing = await db
+      .select()
+      .from(users)
+      .where(like(users.email, email.toLowerCase()))
+      .limit(1);
+    if (existing.length > 0) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
     }
 
-    const passwordHash = hashPassword(password);
-    const user = createUser({
+    const userId = crypto.randomUUID();
+    await db.insert(users).values({
+      id: userId,
       name,
       email,
       phone,
       country,
-      passwordHash,
+      passwordHash: hashPassword(password),
       role: "patient",
+      createdAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ user, message: "Patient created successfully" });
+    const userRows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+    return NextResponse.json({ user: userRows[0], message: "Patient created successfully" });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -83,11 +96,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Patient ID required" }, { status: 400 });
     }
 
-    const success = deleteUserById(id);
-
-    if (!success) {
+    const existing = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    if (existing.length === 0) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
+
+    await db.delete(users).where(eq(users.id, id));
 
     return NextResponse.json({ message: "Patient deleted successfully" });
   } catch (error) {

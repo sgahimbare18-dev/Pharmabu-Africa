@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByEmail, getPharmacyByEmail, getPharmacyStaffByEmail, hashPassword } from "@/lib/store";
+import { db } from "@/db";
+import { users, pharmacies, pharmacyStaff } from "@/db/schema";
+import { like } from "drizzle-orm";
+import { hashPassword } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,9 +14,15 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = hashPassword(password);
+    const emailQuery = email.toLowerCase();
 
     // Check patients first
-    const user = getUserByEmail(email);
+    const userRows = await db
+      .select()
+      .from(users)
+      .where(like(users.email, emailQuery))
+      .limit(1);
+    const user = userRows[0];
     if (user) {
       if (user.passwordHash !== passwordHash) {
         return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
@@ -31,7 +40,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check pharmacy owner (main pharmacy account)
-    const pharmacy = getPharmacyByEmail(email);
+    const pharmacyRows = await db
+      .select()
+      .from(pharmacies)
+      .where(like(pharmacies.email, emailQuery))
+      .limit(1);
+    const pharmacy = pharmacyRows[0];
     if (pharmacy) {
       if (pharmacy.passwordHash !== passwordHash) {
         return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
@@ -66,7 +80,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check pharmacy staff
-    const staff = getPharmacyStaffByEmail(email);
+    const staffRows = await db
+      .select()
+      .from(pharmacyStaff)
+      .where(like(pharmacyStaff.email, emailQuery))
+      .limit(1);
+    const staff = staffRows[0];
     if (staff) {
       if (staff.passwordHash !== passwordHash) {
         return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
